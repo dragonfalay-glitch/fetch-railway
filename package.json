@@ -1,0 +1,15 @@
+{
+  "name": "railway-supabase-proxy",
+  "version": "1.0.0",
+  "description": "Proxy Node.js cURL ke OtoMax dengan log Supabase di Railway",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
