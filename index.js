@@ -2,8 +2,8 @@ const http = require('http');
 const { createClient } = require('@supabase/supabase-js');
 
 // Inisialisasi Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.URL;
+const supabaseKey = process.env.PUBLIC;
 if (!supabaseUrl || !supabaseKey) {
     console.error("ERROR: SUPABASE_URL atau SUPABASE_ANON_KEY belum diatur di Environment Variables!");
 }
