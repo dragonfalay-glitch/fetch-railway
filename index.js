@@ -6,12 +6,11 @@ const supabaseKey = process.env.PUBLIC;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 const server = http.createServer(async (req, res) => {
-    // 1. Tambahkan Header CORS yang lengkap untuk semua origin
+    // Header CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // 2. Tangani preflight request (OPTIONS) dari browser sebelum request asli masuk
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
@@ -23,7 +22,7 @@ const server = http.createServer(async (req, res) => {
         
         if (parsedUrl.pathname === '/') {
             res.writeHead(200, { 'Content-Type': 'text/plain; charset=UTF-8' });
-            res.end('Proxy Railway untuk OtoMax & Supabase Aktif!');
+            res.end('Proxy Railway Aktif!');
             return;
         }
 
@@ -36,6 +35,9 @@ const server = http.createServer(async (req, res) => {
 
             const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}`;
 
+            console.log(`Menghubungkan ke OtoMax: ${targetUrl}`);
+
+            // Gunakan AbortController agar fetch tidak menggantung lebih dari 8 detik
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 8000);
 
@@ -46,8 +48,9 @@ const server = http.createServer(async (req, res) => {
                 responseText = await response.text();
             } catch (fetchErr) {
                 clearTimeout(timeoutId);
-                res.writeHead(504, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ status: false, message: "Timeout/Gagal ke OtoMax: " + fetchErr.message }));
+                console.error("Gagal fetch ke OtoMax:", fetchErr.message);
+                res.writeHead(504, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                res.end(`GAGAL_OTOMAX: Tidak dapat terhubung ke server OtoMax (${fetchErr.message})`);
                 return;
             }
 
@@ -65,12 +68,13 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: false, message: "Endpoint tidak ditemukan." }));
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
+        res.end('Endpoint tidak ditemukan.');
 
     } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: false, message: "Server Error: " + err.message }));
+        console.error("Server Error:", err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
+        res.end('Server Error: ' + err.message);
     }
 });
 
