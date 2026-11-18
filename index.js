@@ -1,14 +1,15 @@
 const http = require('http');
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.URL;
-const supabaseKey = process.env.PUBLIC;
+// Menggunakan nama environment variable yang benar sesuai standar Railway
+const supabaseUrl = process.URL;
+const supabaseKey = process.PUBLIC;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 const server = http.createServer(async (req, res) => {
-    // Header CORS
+    // 1. Header CORS diperbarui mendukung POST dan OPTIONS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
@@ -26,45 +27,62 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
-        if (parsedUrl.pathname === '/transaksi' || parsedUrl.pathname === '/run') {
-            const memberID = parsedUrl.searchParams.get('memberID') || '';
-            const product = parsedUrl.searchParams.get('product') || '';
-            const dest = parsedUrl.searchParams.get('dest') || '';
-            const refID = parsedUrl.searchParams.get('refID') || '';
-            const sign = parsedUrl.searchParams.get('sign') || '';
+        // 2. Tangani Request POST dari Frontend
+        if (req.method === 'POST' && (parsedUrl.pathname === '/transaksi' || parsedUrl.pathname === '/run')) {
+            let body = '';
+            
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
 
-            const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}`;
+            req.on('end', async () => {
+                try {
+                    const data = JSON.parse(body);
+                    const memberID = data.memberID || '';
+                    const product = data.product || '';
+                    const dest = data.dest || '';
+                    const refID = data.refID || '';
+                    const sign = data.sign || '';
+                    const token = data.token || '';
 
-            console.log(`Menghubungkan ke OtoMax: ${targetUrl}`);
+                    // Target URL ke OtoMax
+                    const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}&token=${encodeURIComponent(token)}`;
 
-            // Gunakan AbortController agar fetch tidak menggantung lebih dari 8 detik
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+                    console.log(`Menghubungkan ke OtoMax (POST): ${targetUrl}`);
 
-            let responseText = "";
-            try {
-                const response = await fetch(targetUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                responseText = await response.text();
-            } catch (fetchErr) {
-                clearTimeout(timeoutId);
-                console.error("Gagal fetch ke OtoMax:", fetchErr.message);
-                res.writeHead(504, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                res.end(`GAGAL_OTOMAX: Tidak dapat terhubung ke server OtoMax (${fetchErr.message})`);
-                return;
-            }
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-            // Simpan ke Supabase di background
-            if (supabaseUrl && supabaseKey) {
-                supabase
-                    .from('inbox_direct_transaksi')
-                    .insert([{ kode_transaksi: refID, tujuan: dest, pesan: responseText, tgl_entri: new Date().toISOString() }])
-                    .then(({ error }) => { if (error) console.error("Supabase Error:", error.message); })
-                    .catch(dbErr => console.error("DB Error:", dbErr.message));
-            }
+                    let responseText = "";
+                    try {
+                        const response = await fetch(targetUrl, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+                        responseText = await response.text();
+                    } catch (fetchErr) {
+                        clearTimeout(timeoutId);
+                        console.error("Gagal fetch ke OtoMax:", fetchErr.message);
+                        res.writeHead(504, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end(`GAGAL_OTOMAX: Tidak dapat terhubung ke server OtoMax (${fetchErr.message})`);
+                        return;
+                    }
 
-            res.writeHead(200, { 'Content-Type': 'text/plain; charset=UTF-8' });
-            res.end(responseText);
+                    // Simpan ke Supabase di background
+                    if (supabaseUrl && supabaseKey) {
+                        supabase
+                            .from('inbox_direct_transaksi')
+                            .insert([{ kode_transaksi: refID, tujuan: dest, pesan: responseText, tgl_entri: new Date().toISOString() }])
+                            .then(({ error }) => { if (error) console.error("Supabase Error:", error.message); })
+                            .catch(dbErr => console.error("DB Error:", dbErr.message));
+                    }
+
+                    res.writeHead(200, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                    res.end(responseText);
+
+                } catch (parseErr) {
+                    res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                    res.end('Format JSON tidak valid.');
+                }
+            });
             return;
         }
 
@@ -79,6 +97,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+// Tambahkan '0.0.0.0' agar server dapat diakses publik via Railway dengan stabil
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server berjalan di port ${PORT}`);
 });
