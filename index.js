@@ -96,6 +96,12 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
+// Cek IP publik keluar
+fetch('https://api.ipify.org?format=json')
+    .then(res => res.json())
+    .then(data => console.log("IP Publik Railway saat keluar:", data.ip))
+    .catch(err => console.error("Gagal cek IP:", err.message));
+
 const PORT = process.env.PORT || 3000;
 // Tambahkan '0.0.0.0' agar server dapat diakses publik via Railway dengan stabil
 server.listen(PORT, '0.0.0.0', () => {
