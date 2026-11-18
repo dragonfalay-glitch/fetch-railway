@@ -49,7 +49,7 @@ const server = http.createServer(async (req, res) => {
                     const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}&token=${encodeURIComponent(token)}`;
 
                     // ✅ UBAH MENJADI SEPERTI INI (Hanya mencatat RefID atau status penting saja)
-                  console.log(`Memproses transaksi untuk  (Produk: ${product})`);
+                  console.log(`Memproses....`);
 
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 8000);
