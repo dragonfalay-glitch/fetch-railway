@@ -2,8 +2,8 @@ const http = require('http');
 const { createClient } = require('@supabase/supabase-js');
 
 // Menggunakan nama environment variable yang benar sesuai standar Railway
-const supabaseUrl = process.URL;
-const supabaseKey = process.PUBLIC;
+const supabaseUrl = process.env.URL;
+const supabaseKey = process.env.PUBLIC;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 const server = http.createServer(async (req, res) => {
