@@ -86,6 +86,44 @@ const server = http.createServer(async (req, res) => {
             });
             return;
         }
+        // Endpoint ambil riwayat transaksi dari Supabase
+        if (req.method === 'GET' && parsedUrl.pathname === '/riwayat') {
+            if (!supabaseUrl || !supabaseKey) {
+                res.writeHead(500, { 'Content-Type': 'application/json; charset=UTF-8' });
+                res.end(JSON.stringify({ status: false, message: 'Konfigurasi Supabase belum lengkap.' }));
+                return;
+            }
+
+            const refID = parsedUrl.searchParams.get('refID') || '';
+            const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '20', 10);
+            const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 20;
+
+            let query = supabase
+                .from('inbox_direct_transaksi')
+                .select('id, kode_transaksi, tujuan, pesan, tgl_entri')
+                .order('tgl_entri', { ascending: false })
+                .limit(limit);
+
+            if (refID) {
+                query = query.eq('kode_transaksi', refID);
+            }
+
+            const { data, error } = await query;
+
+            if (error) {
+                console.error("Supabase Select Error:", error.message);
+                res.writeHead(500, { 'Content-Type': 'application/json; charset=UTF-8' });
+                res.end(JSON.stringify({ status: false, message: 'Gagal mengambil riwayat dari Supabase.' }));
+                return;
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+            res.end(JSON.stringify({
+                status: true,
+                data: data || []
+            }));
+            return;
+        }
 
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
         res.end('Endpoint tidak ditemukan.');
