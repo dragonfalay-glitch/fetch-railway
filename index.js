@@ -96,17 +96,18 @@ const server = http.createServer(async (req, res) => {
             }
 
             const refID = parsedUrl.searchParams.get('refID') || '';
+            const userID = parsedUrl.searchParams.get('userID') || '';
             const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '20', 10);
             const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 20;
 
             let query = supabase
                 .from('inbox_direct_transaksi')
-                .select('id, kode_transaksi, tujuan, pesan, tgl_entri')
+                .select('id, kode_transaksi, tujuan, pesan, tgl_entri, user_id')
                 .order('tgl_entri', { ascending: false })
                 .limit(limit);
 
             if (refID) {
-                query = query.eq('kode_transaksi', refID);
+                query = query.eq('user_id', userID);
             }
 
             const { data, error } = await query;
