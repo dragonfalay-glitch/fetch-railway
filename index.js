@@ -96,7 +96,7 @@ const server = http.createServer(async (req, res) => {
             }
 
             const refID = parsedUrl.searchParams.get('refID') || '';
-            const userID = parsedUrl.searchParams.get('userID') || '';
+            const userID = parsedUrl.searchParams.get('userID') || 2;
             const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '20', 10);
             const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 20;
 
