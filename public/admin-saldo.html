@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manajemen Saldo User — Admin</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --radius: 12px;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-2: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: var(--muted);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 0.92rem;
+    }
+
+    input:focus, select:focus {
+      outline: 2px solid var(--primary);
+      outline-offset: 1px;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .btn-sm {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .alert {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    .alert.show { display: block; }
+    .alert.ok {
+      background: rgba(22, 163, 74, 0.14);
+      border: 1px solid rgba(22, 163, 74, 0.35);
+      color: var(--success);
+    }
+    .alert.err {
+      background: rgba(220, 38, 38, 0.14);
+      border: 1px solid rgba(220, 38, 38, 0.35);
+      color: var(--danger);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .saldo-val {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>Manajemen Saldo User</h1>
+        <p>Panel Admin PPOB &amp; Saldo Reseller/User</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn-outline btn-sm" id="btnTheme">Mode Gelap</button>
+        <button type="button" class="btn-outline btn-sm hidden" id="btnLogout">Keluar</button>
+      </div>
+    </header>
+
+    <div id="alertBox" class="alert"></div>
+
+    <!-- Form Login Admin -->
+    <section id="loginSection" class="card" style="max-width: 440px; margin: 24px auto;">
+      <h2 class="card-title">Login Admin</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="apiBase">Base URL Server Railway</label>
+          <input type="url" id="apiBase" placeholder="https://nama-app.up.railway.app" required />
+        </div>
+        <div class="form-group">
+          <label for="adminUser">Username</label>
+          <input type="text" id="adminUser" value="admin" required />
+        </div>
+        <div class="form-group">
+          <label for="adminPass">Password Admin</label>
+          <input type="password" id="adminPass" placeholder="Masukkan password admin" required />
+        </div>
+        <button type="submit" class="btn-primary" id="btnLogin" style="width: 100%;">Masuk</button>
+      </form>
+    </section>
+
+    <!-- Panel Manajemen Saldo (tampil setelah login) -->
+    <main id="dashboardSection" class="hidden">
+      <div class="grid-2">
+        <!-- Form Top-up / Potong Saldo -->
+        <section class="card">
+          <h2 class="card-title">Top-up / Potong Saldo (Delta)</h2>
+          <form id="adjustForm">
+            <div class="form-group">
+              <label for="adjUserId">User ID</label>
+              <input type="number" id="adjUserId" min="1" placeholder="Contoh: 1" required />
+            </div>
+            <div class="form-group">
+              <label for="adjMode">Aksi</label>
+              <select id="adjMode">
+                <option value="topup">Tambah Saldo (+)</option>
+                <option value="deduct">Potong Saldo (-)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="adjAmount">Nominal (IDR)</label>
+              <input type="number" id="adjAmount" min="1" step="1" placeholder="Contoh: 50000" required />
+            </div>
+            <button type="submit" class="btn-success" id="btnAdjust">Simpan Perubahan</button>
+          </form>
+        </section>
+
+        <!-- Form Set Saldo Absolut -->
+        <section class="card">
+          <h2 class="card-title">Atur Saldo Pasti (Set Saldo)</h2>
+          <form id="setForm">
+            <div class="form-group">
+              <label for="setUserId">User ID</label>
+              <input type="number" id="setUserId" min="1" placeholder="Contoh: 1" required />
+            </div>
+            <div class="form-group">
+              <label for="setAmount">Saldo Baru (IDR)</label>
+              <input type="number" id="setAmount" min="0" step="1" placeholder="Contoh: 100000" required />
+            </div>
+            <button type="submit" class="btn-primary" id="btnSet">Tetapkan Saldo</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- Tabel Daftar Saldo User -->
+      <section class="card">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px;">
+          <h2 class="card-title" style="margin: 0;">Daftar Saldo User</h2>
+          <div class="row-actions">
+            <input type="text" id="searchUserId" placeholder="Cari User ID..." style="width: 150px; padding: 7px 10px;" />
+            <button type="button" class="btn-outline btn-sm" id="btnRefresh">Refresh</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User ID</th>
+                <th>Saldo</th>
+                <th>Terakhir Diupdate</th>
+                <th>Aksi Cepat</th>
+              </tr>
+            </thead>
+            <tbody id="saldoTbody">
+              <tr><td colspan="4" style="color: var(--muted);">Belum ada data.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'ppob_admin_token';
+    const API_KEY_STORAGE = 'ppob_admin_api_base';
+    const THEME_KEY = 'ppob_admin_theme';
+
+    const loginSection = document.getElementById('loginSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const btnLogout = document.getElementById('btnLogout');
+    const btnTheme = document.getElementById('btnTheme');
+    const alertBox = document.getElementById('alertBox');
+
+    const apiBaseInput = document.getElementById('apiBase');
+    const saldoTbody = document.getElementById('saldoTbody');
+
+    function showAlert(msg, type = 'ok') {
+      alertBox.textContent = msg;
+      alertBox.className = `alert show ${type}`;
+    }
+
+    function clearAlert() {
+      alertBox.className = 'alert';
+      alertBox.textContent = '';
+    }
+
+    function formatRupiah(num) {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0
+      }).format(Number(num || 0));
+    }
+
+    function getApiBase() {
+      return (apiBaseInput.value || localStorage.getItem(API_KEY_STORAGE) || '').trim().replace(/\/+$/, '');
+    }
+
+    function getToken() {
+      return sessionStorage.getItem(TOKEN_KEY) || '';
+    }
+
+    function setAuthenticated(isAuth) {
+      loginSection.classList.toggle('hidden', isAuth);
+      dashboardSection.classList.toggle('hidden', !isAuth);
+      btnLogout.classList.toggle('hidden', !isAuth);
+    }
+
+    // Tema Light / Dark
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_KEY, theme);
+      btnTheme.textContent = theme === 'dark' ? 'Mode Terang' : 'Mode Gelap';
+    }
+
+    btnTheme.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+    apiBaseInput.value = localStorage.getItem(API_KEY_STORAGE) || window.location.origin;
+
+    async function apiFetch(path, options = {}) {
+      const base = getApiBase();
+      if (!base) throw new Error('Base URL server belum diisi.');
+
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      };
+
+      const token = getToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${base}${path}`, { ...options, headers });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        setAuthenticated(false);
+        throw new Error(data.message || 'Sesi berakhir, silakan login ulang.');
+      }
+
+      if (!res.ok || data.status === false) {
+        throw new Error(data.message || `Request gagal (${res.status})`);
+      }
+
+      return data;
+    }
+
+    async function loadSaldos() {
+      const q = document.getElementById('searchUserId').value.trim();
+      const queryStr = q ? `?q=${encodeURIComponent(q)}` : '';
+      saldoTbody.innerHTML = '<tr><td colspan="4" style="color: var(--muted);">Memuat data...</td></tr>';
+
+      try {
+        const res = await apiFetch(`/admin/saldos${queryStr}`, { method: 'GET' });
+        const rows = res.data || [];
+
+        if (!rows.length) {
+          saldoTbody.innerHTML = '<tr><td colspan="4" style="color: var(--muted);">Tidak ada data saldo user.</td></tr>';
+          return;
+        }
+
+        saldoTbody.innerHTML = rows.map(row => `
+          <tr>
+            <td><strong>#${row.user_id}</strong></td>
+            <td class="saldo-val">${formatRupiah(row.saldo)}</td>
+            <td>${row.updated_at ? new Date(row.updated_at).toLocaleString('id-ID') : '-'}</td>
+            <td>
+              <div class="row-actions">
+                <button type="button" class="btn-outline btn-sm" onclick="prefillUser(${row.user_id}, ${row.saldo})">Pilih</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        saldoTbody.innerHTML = `<tr><td colspan="4" style="color: var(--danger);">${err.message}</td></tr>`;
+      }
+    }
+
+    window.prefillUser = function(userId, currentSaldo) {
+      document.getElementById('adjUserId').value = userId;
+      document.getElementById('setUserId').value = userId;
+      document.getElementById('setAmount').value = currentSaldo;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+      const btn = document.getElementById('btnLogin');
+      btn.disabled = true;
+
+      try {
+        const base = getApiBase();
+        localStorage.setItem(API_KEY_STORAGE, base);
+
+        const username = document.getElementById('adminUser').value.trim();
+        const password = document.getElementById('adminPass').value;
+
+        const res = await fetch(`${base}/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data.status || !data.token) {
+          throw new Error(data.message || 'Login gagal.');
+        }
+
+        sessionStorage.setItem(TOKEN_KEY, data.token);
+        document.getElementById('adminPass').value = '';
+        setAuthenticated(true);
+        showAlert('Berhasil login ke panel admin.');
+        await loadSaldos();
+      } catch (err) {
+        showAlert(err.message, 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    btnLogout.addEventListener('click', () => {
+      sessionStorage.removeItem(TOKEN_KEY);
+      setAuthenticated(false);
+      showAlert('Anda telah keluar.');
+    });
+
+    document.getElementById('adjustForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+      const btn = document.getElementById('btnAdjust');
+      btn.disabled = true;
+
+      try {
+        const userId = Number(document.getElementById('adjUserId').value);
+        const mode = document.getElementById('adjMode').value;
+        const absVal = Math.abs(Number(document.getElementById('adjAmount').value));
+        const delta = mode === 'deduct' ? -absVal : absVal;
+
+        const res = await apiFetch('/admin/saldo/adjust', {
+          method: 'POST',
+          body: JSON.stringify({ user_id: userId, amount: delta })
+        });
+
+        showAlert(`${res.message} Saldo User #${userId}: ${formatRupiah(res.data?.saldo)}`);
+        document.getElementById('adjAmount').value = '';
+        await loadSaldos();
+      } catch (err) {
+        showAlert(err.message, 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('setForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+      const btn = document.getElementById('btnSet');
+      btn.disabled = true;
+
+      try {
+        const userId = Number(document.getElementById('setUserId').value);
+        const amount = Number(document.getElementById('setAmount').value);
+
+        const res = await apiFetch('/admin/saldo/set', {
+          method: 'POST',
+          body: JSON.stringify({ user_id: userId, amount })
+        });
+
+        showAlert(`${res.message} Saldo User #${userId}: ${formatRupiah(res.data?.saldo)}`);
+        await loadSaldos();
+      } catch (err) {
+        showAlert(err.message, 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', loadSaldos);
+    document.getElementById('searchUserId').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loadSaldos();
+    });
+
+    if (getToken()) {
+      setAuthenticated(true);
+      loadSaldos();
+    }
+  </script>
+</body>
+</html>
