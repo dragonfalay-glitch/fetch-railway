@@ -106,7 +106,7 @@ const server = http.createServer(async (req, res) => {
                 .order('tgl_entri', { ascending: false })
                 .limit(limit);
 
-            if (refID) {
+            if (userID) {
                 query = query.eq('user_id', userID);
             }
 
