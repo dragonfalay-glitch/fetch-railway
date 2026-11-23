@@ -44,6 +44,7 @@ const server = http.createServer(async (req, res) => {
                     const refID = data.refID || '';
                     const sign = data.sign || '';
                     const token = data.token || '';
+                    const userID = data.userID || 0;
 
                     // Target URL ke OtoMax
                     const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}&token=${encodeURIComponent(token)}`;
@@ -71,7 +72,7 @@ const server = http.createServer(async (req, res) => {
                     if (supabaseUrl && supabaseKey) {
                         supabase
                             .from('inbox_direct_transaksi')
-                            .insert([{ kode_transaksi: refID, tujuan: dest, pesan: responseText, tgl_entri: new Date().toISOString() }])
+                            .insert([{ kode_transaksi: refID, tujuan: dest, pesan: responseText, tgl_entri: new Date().toISOString(), user_id:userID }])
                             .then(({ error }) => { if (error) console.error("Supabase Error:", error.message); })
                             .catch(dbErr => console.error("DB Error:", dbErr.message));
                     }
