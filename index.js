@@ -387,34 +387,41 @@ const server = http.createServer(async (req, res) => {
                 return kirimJSON(res, 500, { status: false, message: 'Konfigurasi Supabase belum lengkap.' });
             }
 
-            // --- RESELLER (USERS) ---
+           // --- RESELLER (USERS) ---
             if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/resellers') {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('id, auth_user_id, nama, email, no_hp, saldo, status, created_at')
+                    .select('id, user_id, auth_user_id, nama, email, no_hp, saldo, status, created_at')
                     .order('id', { ascending: false });
                 if (error) return kirimJSON(res, 500, { status: false, message: error.message });
                 return kirimJSON(res, 200, { status: true, data: data || [] });
             }
 
             if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/resellers') {
-                const { auth_user_id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
+                const { id, user_id, auth_user_id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
                 if (!nama) return kirimJSON(res, 400, { status: false, message: 'Nama reseller wajib diisi.' });
 
-                const authUserIdClean = auth_user_id && String(auth_user_id).trim() !== ''
-                    ? String(auth_user_id).trim()
-                    : null;
+                const rowInsert = {
+                    user_id: user_id !== undefined && user_id !== null && String(user_id).trim() !== ''
+                        ? String(user_id).trim()
+                        : null,
+                    auth_user_id: auth_user_id && String(auth_user_id).trim() !== ''
+                        ? String(auth_user_id).trim()
+                        : null,
+                    nama: String(nama).trim(),
+                    email: email ? String(email).trim() : null,
+                    no_hp: no_hp ? String(no_hp).trim() : null,
+                    saldo: Number(saldo || 0),
+                    status: status || 'aktif'
+                };
+
+                if (id !== undefined && id !== null && String(id).trim() !== '') {
+                    rowInsert.id = Number(id);
+                }
 
                 const { data, error } = await supabase
                     .from('users')
-                    .insert([{
-                        auth_user_id: authUserIdClean,
-                        nama: String(nama).trim(),
-                        email: email ? String(email).trim() : null,
-                        no_hp: no_hp ? String(no_hp).trim() : null,
-                        saldo: Number(saldo || 0),
-                        status: status || 'aktif'
-                    }])
+                    .insert([rowInsert])
                     .select()
                     .single();
 
@@ -423,17 +430,18 @@ const server = http.createServer(async (req, res) => {
             }
 
             if (req.method === 'PUT' && parsedUrl.pathname === '/api/admin/resellers') {
-                const { id, auth_user_id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
-                if (!id) return kirimJSON(res, 400, { status: false, message: 'ID reseller wajib diisi.' });
-
-                const authUserIdClean = auth_user_id && String(auth_user_id).trim() !== ''
-                    ? String(auth_user_id).trim()
-                    : null;
+                const { id, user_id, auth_user_id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
+                if (!id) return kirimJSON(res, 400, { status: false, message: 'ID tabel users wajib diisi.' });
 
                 const { data, error } = await supabase
                     .from('users')
                     .update({
-                        auth_user_id: authUserIdClean,
+                        user_id: user_id !== undefined && user_id !== null && String(user_id).trim() !== ''
+                            ? String(user_id).trim()
+                            : null,
+                        auth_user_id: auth_user_id && String(auth_user_id).trim() !== ''
+                            ? String(auth_user_id).trim()
+                            : null,
                         nama: String(nama).trim(),
                         email: email ? String(email).trim() : null,
                         no_hp: no_hp ? String(no_hp).trim() : null,
