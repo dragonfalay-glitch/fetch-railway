@@ -84,6 +84,25 @@
     .hidden { display: none; }
     .actions { display: flex; gap: 6px; }
     .pre-wrap { white-space: pre-line; font-size: 12px; line-height: 1.4; max-width: 280px; }
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .pagination-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -263,6 +282,7 @@
     </div>
 
     <!-- TAB LOG TRANSAKSI -->
+   <!-- TAB LOG TRANSAKSI -->
     <div id="sectionLog" class="hidden">
       <div class="card">
         <h3>Filter Log Transaksi</h3>
@@ -276,15 +296,16 @@
             <input type="text" id="filterUserId" placeholder="Contoh: 1" />
           </div>
           <div>
-            <label>Jumlah Data</label>
-            <select id="filterLimit">
-              <option value="25">25 terakhir</option>
-              <option value="50" selected>50 terakhir</option>
-              <option value="100">100 terakhir</option>
+            <label>Data per Halaman</label>
+            <select id="filterLimit" onchange="loadLogTransaksi(1)">
+              <option value="10">10 / halaman</option>
+              <option value="25" selected>25 / halaman</option>
+              <option value="50">50 / halaman</option>
+              <option value="100">100 / halaman</option>
             </select>
           </div>
           <div class="actions">
-            <button type="button" class="btn-primary" onclick="loadLogTransaksi()">Cari / Refresh</button>
+            <button type="button" class="btn-primary" onclick="loadLogTransaksi(1)">Cari / Refresh</button>
             <button type="button" class="btn-secondary" onclick="resetFilterLog()">Reset</button>
           </div>
         </div>
@@ -308,9 +329,16 @@
             <tbody id="logTableBody"></tbody>
           </table>
         </div>
+
+        <div class="pagination-bar">
+          <div id="logPageInfo">Halaman 1 dari 1 (0 data)</div>
+          <div class="pagination-actions">
+            <button type="button" id="btnPrevLog" class="btn-secondary btn-sm" onclick="gantiHalamanLog(-1)">Sebelumnya</button>
+            <button type="button" id="btnNextLog" class="btn-secondary btn-sm" onclick="gantiHalamanLog(1)">Berikutnya</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
   <script>
     const API_BASE = '';
