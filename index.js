@@ -518,6 +518,77 @@ const server = http.createServer(async (req, res) => {
                 if (error) return kirimJSON(res, 400, { status: false, message: error.message });
                 return kirimJSON(res, 200, { status: true, message: 'Produk dihapus.' });
             }
+            // --- LOG TRANSAKSI ---
+            if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/transaksi') {
+                const kodeFilter = (parsedUrl.searchParams.get('kode') || '').trim();
+                const userFilter = (parsedUrl.searchParams.get('user_id') || '').trim();
+                const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '50', 10);
+                const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : 50;
+
+                let query = supabase
+                    .from('inbox_direct_transaksi')
+                    .select('id, kode_transaksi, tujuan, pesan, pesan_sukses_ke_reseller, tgl_entri, user_id')
+                    .order('id', { ascending: false })
+                    .limit(limit);
+
+                if (kodeFilter) {
+                    query = query.ilike('kode_transaksi', `%${kodeFilter}%`);
+                }
+                if (userFilter) {
+                    query = query.eq('user_id', userFilter);
+                }
+
+                const { data, error } = await query;
+                if (error) {
+                    return kirimJSON(res, 500, { status: false, message: error.message });
+                }
+
+                const list = data || [];
+                const kodeList = [...new Set(list.map(x => x.kode_transaksi).filter(Boolean))];
+                const userIds = [...new Set(list.map(x => x.user_id).filter(Boolean))];
+
+                const mutasiMap = new Map();
+                if (kodeList.length > 0) {
+                    const { data: mutasiRows, error: mutasiErr } = await supabase
+                        .from('mutasi_saldo')
+                        .select('kode_transaksi, nominal, saldo_sebelumnya, saldo_sesudahnya')
+                        .in('kode_transaksi', kodeList);
+
+                    if (!mutasiErr && mutasiRows) {
+                        for (const m of mutasiRows) {
+                            mutasiMap.set(m.kode_transaksi, m);
+                        }
+                    }
+                }
+
+                const userMap = new Map();
+                if (userIds.length > 0) {
+                    const { data: userRows, error: userErr } = await supabase
+                        .from('users')
+                        .select('id, nama')
+                        .in('id', userIds);
+
+                    if (!userErr && userRows) {
+                        for (const u of userRows) {
+                            userMap.set(String(u.id), u.nama);
+                        }
+                    }
+                }
+
+                const rows = list.map(item => {
+                    const mutasi = mutasiMap.get(item.kode_transaksi);
+                    return {
+                        ...item,
+                        nama_reseller: item.user_id ? (userMap.get(String(item.user_id)) || '-') : '-',
+                        pesan_reseller: item.pesan_sukses_ke_reseller || item.pesan,
+                        nominal_potong: mutasi ? Number(mutasi.nominal) : null,
+                        saldo_sebelumnya: mutasi ? Number(mutasi.saldo_sebelumnya) : null,
+                        saldo_terbaru: mutasi ? Number(mutasi.saldo_sesudahnya) : null
+                    };
+                });
+
+                return kirimJSON(res, 200, { status: true, data: rows });
+            }
 
             return kirimJSON(res, 404, { status: false, message: 'Endpoint admin tidak ditemukan.' });
         }
