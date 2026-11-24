@@ -352,7 +352,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         // Halaman Admin dari folder public/admin.html
-        if (req.method === 'GET' && (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin.html')) {
+        if (req.method === 'GET' && (parsedUrl.pathname === '/admin-saldo' || parsedUrl.pathname === '/admin-saldo.html')) {
             const filePath = path.join(__dirname, 'public', 'admin-saldo.html');
             fs.readFile(filePath, (err, content) => {
                 if (err) {
