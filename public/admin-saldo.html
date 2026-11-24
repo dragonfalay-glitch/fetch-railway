@@ -148,20 +148,23 @@
       <button id="tabLog" class="tab-btn" onclick="switchTab('log')">Log Transaksi</button>
     </div>
 
-    <!-- TAB RESELLER -->
+   <!-- TAB RESELLER -->
     <div id="sectionReseller">
       <div class="card">
         <h3 id="resellerFormTitle">Tambah Reseller</h3>
         <form id="resellerForm">
-          <input type="hidden" id="resellerId" />
           <div class="row">
+            <div>
+              <label>ID Tabel Users</label>
+              <input type="number" id="resellerId" placeholder="Otomatis jika kosong (saat tambah)" />
+            </div>
+            <div>
+              <label>User ID</label>
+              <input type="text" id="resellerUserId" placeholder="Contoh: 18 atau kode user" />
+            </div>
             <div>
               <label>Nama Reseller *</label>
               <input type="text" id="resellerNama" required />
-            </div>
-            <div>
-              <label>Auth User ID (UUID)</label>
-              <input type="number" id="resellerAuthUserId" placeholder="Opsional: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
             </div>
             <div>
               <label>No. HP</label>
@@ -197,9 +200,9 @@
           <table>
             <thead>
               <tr>
-                <th>ID</th>
+                <th>ID (users)</th>
+                <th>User ID</th>
                 <th>Nama</th>
-                <th>Auth User ID</th>
                 <th>No. HP</th>
                 <th>Saldo</th>
                 <th>Status</th>
