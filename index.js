@@ -228,7 +228,7 @@ const server = http.createServer(async (req, res) => {
                         .from('produk_pulsa')
                         .select('id, kode_produk, harga_jual, is_active')
                         .ilike('kode_produk', kodeProdukClean)
-                        .eq('is_active', true)
+                        .eq('is_aktif', true)
                         .limit(1);
 
                     if (produkValidError) {
