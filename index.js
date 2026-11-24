@@ -1,644 +1,644 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
-const crypto = require('crypto');
-
-// Menggunakan nama environment variable yang benar sesuai standar Railway
-const supabaseUrl = process.env.URL;
-const supabaseKey = process.env.PUBLIC;
-const supabase = createClient(supabaseUrl || '', supabaseKey || '');
-
-// Admin sesi (pastikan ADMIN_USER, ADMIN_PASS, dan ADMIN_SECRET terisi di Railway)
-const ADMIN_USER = process.env.ADMIN_USER || '';
-const ADMIN_PASS = process.env.ADMIN_PASS || '';
-const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
-
-function buatAdminToken(username) {
-    const payload = Buffer.from(JSON.stringify({
-        user: username,
-        exp: Date.now() + 24 * 60 * 60 * 1000
-    })).toString('base64url');
-    const sig = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('base64url');
-    return `${payload}.${sig}`;
-}
-
-function verifikasiAdminToken(req) {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-    if (!token || !token.includes('.')) return null;
-
-    const [payload, sig] = token.split('.');
-    const expectedSig = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('base64url');
-    if (sig !== expectedSig) return null;
-
-    try {
-        const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-        if (!parsed.exp || Date.now() > parsed.exp) return null;
-        return parsed;
-    } catch {
-        return null;
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Admin - Reseller, Produk Pulsa & Log Transaksi</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #dc2626;
+      --border: #e5e7eb;
+      --input-bg: #ffffff;
+      --th-bg: #f9fafb;
+      --btn-sec-bg: #e5e7eb;
+      --btn-sec-text: #111827;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --badge-ok-bg: #dcfce7;
+      --badge-ok-text: #166534;
+      --badge-off-bg: #fee2e2;
+      --badge-off-text: #991b1b;
     }
-}
 
-function kirimJSON(res, statusCode, data) {
-    res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=UTF-8' });
-    res.end(JSON.stringify(data));
-}
+    html.dark-theme {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --border: #334155;
+      --input-bg: #0f172a;
+      --th-bg: #162033;
+      --btn-sec-bg: #334155;
+      --btn-sec-text: #f8fafc;
+      --shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      --badge-ok-bg: rgba(22, 163, 74, 0.2);
+      --badge-ok-text: #86efac;
+      --badge-off-bg: rgba(220, 38, 38, 0.2);
+      --badge-off-text: #fca5a5;
+    }
 
-function bacaBodyJSON(req) {
-    return new Promise((resolve, reject) => {
-        let raw = '';
-        req.on('data', chunk => { raw += chunk.toString(); });
-        req.on('end', () => {
-            try {
-                resolve(raw ? JSON.parse(raw) : {});
-            } catch (err) {
-                reject(err);
-            }
+- { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); transition: background-color 0.2s, color 0.2s; }
+    .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
+    .login-box { max-width: 380px; margin: 80px auto; }
+    .login-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .login-header h2 { margin: 0; }
+    h1, h2, h3 { margin-top: 0; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+    }
+    button { padding: 9px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .topbar-right { display: flex; gap: 8px; align-items: center; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tab-btn { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; vertical-align: top; }
+    th { background: var(--th-bg); color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    .badge-ok { background: var(--badge-ok-bg); color: var(--badge-ok-text); padding: 2px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
+    .badge-off { background: var(--badge-off-bg); color: var(--badge-off-text); padding: 2px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
+    .msg { font-size: 13px; margin-top: 8px; color: var(--danger); }
+    .hidden { display: none; }
+    .actions { display: flex; gap: 6px; }
+    .pre-wrap { white-space: pre-line; font-size: 12px; line-height: 1.4; max-width: 280px; }
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .pagination-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HALAMAN LOGIN ADMIN -->
+  <div id="loginView" class="container">
+    <div class="card login-box">
+      <div class="login-header">
+        <h2>Login Admin</h2>
+        <button type="button" class="btn-secondary btn-sm" onclick="toggleTheme()" id="themeBtnLogin">Dark Mode</button>
+      </div>
+      <form id="loginForm">
+        <div style="margin-bottom:12px;">
+          <label>Username</label>
+          <input type="text" id="loginUser" required placeholder="admin" />
+        </div>
+        <div style="margin-bottom:14px;">
+          <label>Password</label>
+          <input type="password" id="loginPass" required placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;">Masuk</button>
+        <div id="loginError" class="msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HALAMAN DASHBOARD ADMIN -->
+  <div id="dashboardView" class="container hidden">
+    <div class="topbar">
+      <div>
+        <h2 style="margin-bottom:2px;">Dashboard Admin</h2>
+        <small id="adminInfo" style="color:var(--muted);"></small>
+      </div>
+      <div class="topbar-right">
+        <button type="button" class="btn-secondary" onclick="toggleTheme()" id="themeBtnDash">Dark Mode</button>
+        <button type="button" class="btn-secondary" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button id="tabReseller" class="tab-btn active" onclick="switchTab('reseller')">Manajemen Reseller</button>
+      <button id="tabProduk" class="tab-btn" onclick="switchTab('produk')">Manajemen Produk Pulsa</button>
+      <button id="tabLog" class="tab-btn" onclick="switchTab('log')">Log Transaksi</button>
+    </div>
+
+    <!-- TAB RESELLER -->
+    <!-- TAB RESELLER -->
+    <div id="sectionReseller">
+      <div class="card">
+        <h3 id="resellerFormTitle">Tambah Reseller</h3>
+        <form id="resellerForm">
+          <input type="hidden" id="resellerId" />
+          <div class="row">
+            <div>
+              <label>Nama Reseller *</label>
+              <input type="text" id="resellerNama" required />
+            </div>
+            <div>
+              <label>Auth User ID (UUID)</label>
+              <input type="text" id="resellerAuthUserId" placeholder="Opsional: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+            </div>
+            <div>
+              <label>No. HP</label>
+              <input type="text" id="resellerHp" />
+            </div>
+            <div>
+              <label>Email</label>
+              <input type="email" id="resellerEmail" />
+            </div>
+            <div>
+              <label>Saldo (Rp)</label>
+              <input type="number" id="resellerSaldo" step="any" value="0" />
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="resellerStatus">
+                <option value="aktif">aktif</option>
+                <option value="nonaktif">nonaktif</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn-primary">Simpan Reseller</button>
+            <button type="button" class="btn-secondary" onclick="resetResellerForm()">Batal</button>
+          </div>
+          <div id="resellerMsg" class="msg"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Daftar Reseller</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nama</th>
+                <th>Auth User ID</th>
+                <th>No. HP</th>
+                <th>Saldo</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="resellerTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB PRODUK PULSA -->
+    <div id="sectionProduk" class="hidden">
+      <div class="card">
+        <h3 id="produkFormTitle">Tambah Produk Pulsa</h3>
+        <form id="produkForm">
+          <input type="hidden" id="produkId" />
+          <div class="row">
+            <div>
+              <label>Kode Produk *</label>
+              <input type="text" id="produkKode" required placeholder="S10" />
+            </div>
+            <div>
+              <label>Nama Produk *</label>
+              <input type="text" id="produkNama" required placeholder="Telkomsel 10rb" />
+            </div>
+            <div>
+              <label>Provider *</label>
+              <input type="text" id="produkProvider" required placeholder="Telkomsel" />
+            </div>
+            <div>
+              <label>Kategori</label>
+              <input type="text" id="produkKategori" value="Pulsa" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Nominal</label>
+              <input type="number" id="produkNominal" step="any" value="10000" />
+            </div>
+            <div>
+              <label>Harga Modal (Rp)</label>
+              <input type="number" id="produkModal" step="any" value="0" />
+            </div>
+            <div>
+              <label>Harga Jual (Rp)</label>
+              <input type="number" id="produkJual" step="any" value="0" />
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="produkAktif">
+                <option value="true">Aktif</option>
+                <option value="false">Nonaktif</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn-primary">Simpan Produk</button>
+            <button type="button" class="btn-secondary" onclick="resetProdukForm()">Batal</button>
+          </div>
+          <div id="produkMsg" class="msg"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Daftar Produk Pulsa</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Nama Produk</th>
+                <th>Provider</th>
+                <th>Modal</th>
+                <th>Harga Jual</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="produkTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB LOG TRANSAKSI -->
+   <!-- TAB LOG TRANSAKSI -->
+    <div id="sectionLog" class="hidden">
+      <div class="card">
+        <h3>Filter Log Transaksi</h3>
+        <div class="row" style="align-items:end;">
+          <div>
+            <label>Kode Transaksi (RefID)</label>
+            <input type="text" id="filterKode" placeholder="TRX..." />
+          </div>
+          <div>
+            <label>User ID Reseller</label>
+            <input type="text" id="filterUserId" placeholder="Contoh: 1" />
+          </div>
+          <div>
+            <label>Data per Halaman</label>
+            <select id="filterLimit" onchange="loadLogTransaksi(1)">
+              <option value="10">10 / halaman</option>
+              <option value="25" selected>25 / halaman</option>
+              <option value="50">50 / halaman</option>
+              <option value="100">100 / halaman</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn-primary" onclick="loadLogTransaksi(1)">Cari / Refresh</button>
+            <button type="button" class="btn-secondary" onclick="resetFilterLog()">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Riwayat / Log Transaksi</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Kode TRX</th>
+                <th>Reseller</th>
+                <th>Tujuan</th>
+                <th>Pesan Reseller</th>
+                <th>Respon OtoMax</th>
+                <th>Mutasi Saldo</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar">
+          <div id="logPageInfo">Halaman 1 dari 1 (0 data)</div>
+          <div class="pagination-actions">
+            <button type="button" id="btnPrevLog" class="btn-secondary btn-sm" onclick="gantiHalamanLog(-1)">Sebelumnya</button>
+            <button type="button" id="btnNextLog" class="btn-secondary btn-sm" onclick="gantiHalamanLog(1)">Berikutnya</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <script>
+    const API_BASE = '';
+    const TOKEN_KEY = 'admin_jwt_token';
+    const THEME_KEY = 'admin_dark_theme';
+    let resellerCache = [];
+    let produkCache = [];
+
+    function applyTheme(isDark) {
+      document.documentElement.classList.toggle('dark-theme', isDark);
+      const label = isDark ? 'Light Mode' : 'Dark Mode';
+      const btnLogin = document.getElementById('themeBtnLogin');
+      const btnDash = document.getElementById('themeBtnDash');
+      if (btnLogin) btnLogin.textContent = label;
+      if (btnDash) btnDash.textContent = label;
+    }
+
+    function toggleTheme() {
+      const isDark = !document.documentElement.classList.contains('dark-theme');
+      localStorage.setItem(THEME_KEY, isDark ? '1' : '0');
+      applyTheme(isDark);
+    }
+
+    applyTheme(localStorage.getItem(THEME_KEY) === '1');
+
+    const fmtRp = (n) => (n === null || n === undefined || Number.isNaN(Number(n)))
+      ? '-'
+      : 'Rp' + Number(n).toLocaleString('id-ID');
+
+    const fmtWaktu = (iso) => {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('id-ID');
+    };
+
+    const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
+
+    async function adminFetch(path, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken(),
+        ...(options.headers || {})
+      };
+      const res = await fetch(API_BASE + path, { ...options, headers });
+      if (res.status === 401) {
+        logout();
+        throw new Error('Sesi berakhir, silakan login ulang.');
+      }
+      return res.json();
+    }
+
+    function showDashboard(username) {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('dashboardView').classList.remove('hidden');
+      document.getElementById('adminInfo').textContent = 'Login sebagai: ' + (username || 'admin');
+      loadResellers();
+      loadProduk();
+      loadLogTransaksi();
+    }
+
+    function logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('loginView').classList.remove('hidden');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('loginError').textContent = '';
+      const username = document.getElementById('loginUser').value.trim();
+      const password = document.getElementById('loginPass').value;
+
+      try {
+        const res = await fetch(API_BASE + '/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
         });
+        const data = await res.json();
+        if (!data.status) {
+          document.getElementById('loginError').textContent = data.message || 'Login gagal.';
+          return;
+        }
+        localStorage.setItem(TOKEN_KEY, data.token);
+        showDashboard(data.username);
+      } catch (err) {
+        document.getElementById('loginError').textContent = 'Gagal terhubung ke server.';
+      }
     });
-}
 
-// Cek apakah isi kolom `pesan` menandakan transaksi sukses
-function isTransaksiSukses(pesan = '') {
-    const teks = String(pesan).toUpperCase();
-    const adaKataGagal = teks.includes('GAGAL') || teks.includes('SALDO TIDAK CUKUP') || teks.includes('INVALID');
-    const adaKataSukses = teks.includes('SUKSES') || teks.includes('BERHASIL');
-    return adaKataSukses && !adaKataGagal;
-}
+    function switchTab(tab) {
+      document.getElementById('tabReseller').classList.toggle('active', tab === 'reseller');
+      document.getElementById('tabProduk').classList.toggle('active', tab === 'produk');
+      document.getElementById('tabLog').classList.toggle('active', tab === 'log');
 
-// Ambil nominal potong saldo: prioritas dari body `harga`, fallback dari pola harga di `pesan`
-function ambilNominalPotong(data, pesan = '') {
-    const hargaBody = Number(data.harga ?? data.amount ?? data.nominal ?? 0);
-    if (Number.isFinite(hargaBody) && hargaBody > 0) {
-        return hargaBody;
+      document.getElementById('sectionReseller').classList.toggle('hidden', tab !== 'reseller');
+      document.getElementById('sectionProduk').classList.toggle('hidden', tab !== 'produk');
+      document.getElementById('sectionLog').classList.toggle('hidden', tab !== 'log');
+
+      if (tab === 'log') loadLogTransaksi();
     }
 
-    const matchHarga = String(pesan).match(/(?:HARGA|RP\.?|NOMINAL|BIAYA)\s*:?\s*([\d.,]+)/i);
-    if (matchHarga && matchHarga[1]) {
-        const bersih = Number(matchHarga[1].replace(/[.,]/g, ''));
-        if (Number.isFinite(bersih) && bersih > 0) {
-            return bersih;
-        }
+    // --- RESELLER ---
+    async function loadResellers() {
+      const res = await adminFetch('/api/admin/resellers');
+      if (!res.status) return;
+      resellerCache = res.data || [];
+      const tbody = document.getElementById('resellerTableBody');
+      tbody.innerHTML = resellerCache.map(r => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.nama}</td>
+          <td>${r.no_hp || '-'}</td>
+          <td><strong>${fmtRp(r.saldo)}</strong></td>
+          <td><span class="${r.status === 'aktif' ? 'badge-ok' : 'badge-off'}">${r.status}</span></td>
+          <td class="actions">
+            <button class="btn-secondary btn-sm" onclick="editReseller(${r.id})">Edit</button>
+            <button class="btn-danger btn-sm" onclick="deleteReseller(${r.id})">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    return 0;
-}
+    function editReseller(id) {
+      const r = resellerCache.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('resellerFormTitle').textContent = 'Edit Reseller #' + r.id;
+      document.getElementById('resellerId').value = r.id;
+      document.getElementById('resellerNama').value = r.nama || '';
+      document.getElementById('resellerHp').value = r.no_hp || '';
+      document.getElementById('resellerEmail').value = r.email || '';
+      document.getElementById('resellerSaldo').value = r.saldo ?? 0;
+      document.getElementById('resellerStatus').value = r.status || 'aktif';
+    }
 
-// Ekstrak SN umum dari respon OtoMax jika tersedia
-function ekstrakSN(pesan = '') {
-    const matchSN = String(pesan).match(/\bSN\s*[:=/#-]?\s*([A-Za-z0-9-]{6,})/i);
-    return matchSN ? matchSN[1] : null;
-}
+    function resetResellerForm() {
+      document.getElementById('resellerFormTitle').textContent = 'Tambah Reseller';
+      document.getElementById('resellerForm').reset();
+      document.getElementById('resellerId').value = '';
+      document.getElementById('resellerMsg').textContent = '';
+    }
 
-// Format rupiah sederhana
-function formatRupiah(angka) {
-    const num = Number(angka || 0);
-    return 'Rp' + num.toLocaleString('id-ID');
-}
-
-// Susun pesan khusus untuk reseller saat transaksi sukses & saldo terpotong
-function buatPesanSuksesReseller({ kodeTransaksi, produk, tujuan, pesanOtoMax, nominalPotong, saldoTerbaru }) {
-    const sn = ekstrakSN(pesanOtoMax);
-    const barisSN = sn ? `\nSN: ${sn}` : '';
-    const barisSaldo = saldoTerbaru !== undefined && saldoTerbaru !== null
-        ? `\nSisa Saldo: ${formatRupiah(saldoTerbaru)}`
-        : '';
-
-    return [
-        `Transaksi SUKSES (${kodeTransaksi})`,
-        `Produk: ${produk}`,
-        `Tujuan: ${tujuan}${barisSN}`,
-        `Potongan Saldo: ${formatRupiah(nominalPotong)}${barisSaldo}`
-    ].join('\n');
-}
-
-const server = http.createServer(async (req, res) => {
-    // 1. Header CORS diperbarui mendukung GET, POST, PUT, DELETE, OPTIONS, dan Authorization
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-    if (req.method === 'OPTIONS') {
-        res.writeHead(204);
-        res.end();
+    document.getElementById('resellerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('resellerMsg').textContent = '';
+      const id = document.getElementById('resellerId').value;
+      const payload = {
+        ...(id ? { id: Number(id) } : {}),
+        nama: document.getElementById('resellerNama').value,
+        no_hp: document.getElementById('resellerHp').value,
+        email: document.getElementById('resellerEmail').value,
+        saldo: Number(document.getElementById('resellerSaldo').value || 0),
+        status: document.getElementById('resellerStatus').value
+      };
+      const res = await adminFetch('/api/admin/resellers', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (!res.status) {
+        document.getElementById('resellerMsg').textContent = res.message;
         return;
+      }
+      resetResellerForm();
+      loadResellers();
+    });
+
+    async function deleteReseller(id) {
+      if (!confirm('Hapus reseller #' + id + '?')) return;
+      const res = await adminFetch('/api/admin/resellers?id=' + id, { method: 'DELETE' });
+      if (res.status) loadResellers();
     }
 
-    try {
-        const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
-
-        if (parsedUrl.pathname === '/') {
-            res.writeHead(200, { 'Content-Type': 'text/plain; charset=UTF-8' });
-            res.end('Proxy Railway Aktif!');
-            return;
-        }
-
-        // 2. Tangani Request POST dari Frontend
-        if (req.method === 'POST' && (parsedUrl.pathname === '/transaksi' || parsedUrl.pathname === '/run')) {
-            let body = '';
-
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-
-            req.on('end', async () => {
-                try {
-                    const data = JSON.parse(body);
-                    const memberID = data.memberID || '';
-                    const product = data.product || '';
-                    const dest = data.dest || '';
-                    const refID = data.refID || '';
-                    const sign = data.sign || '';
-                    const token = data.token || '';
-                    const userID = data.userID ?? null;
-
-                    // Target URL ke OtoMax
-                    const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}&token=${encodeURIComponent(token)}`;
-
-                    console.log(`Memproses....`);
-
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-                    let responseText = "";
-                    try {
-                        const response = await fetch(targetUrl, { signal: controller.signal });
-                        clearTimeout(timeoutId);
-                        responseText = await response.text();
-                    } catch (fetchErr) {
-                        clearTimeout(timeoutId);
-                        console.error("Gagal fetch ke OtoMax:", fetchErr.message);
-                        res.writeHead(504, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end(`GAGAL_OTOMAX: Tidak dapat terhubung ke server OtoMax (${fetchErr.message})`);
-                        return;
-                    }
-
-                    let pesanSuksesReseller = null;
-
-                    // Simpan ke Supabase dan potong saldo jika kolom `pesan` (responseText) sukses
-                    if (supabaseUrl && supabaseKey) {
-                        const { data: insertedRow, error: insertError } = await supabase
-                            .from('inbox_direct_transaksi')
-                            .insert([{
-                                kode_transaksi: refID,
-                                tujuan: dest,
-                                pesan: responseText,
-                                tgl_entri: new Date().toISOString(),
-                                user_id: userID,
-                                pesan_sukses_ke_reseller: null
-                            }])
-                            .select('id')
-                            .single();
-
-                        if (insertError) {
-                            console.error("Supabase Insert Error:", insertError.message);
-                        } else if (isTransaksiSukses(responseText)) {
-                            // 1. Cari harga jual dari tabel produk_pulsa jika ada
-                            let nominalPotong = 0;
-                            if (product) {
-                                const { data: produkRow, error: produkError } = await supabase
-                                    .from('produk_pulsa')
-                                    .select('harga_jual, is_aktif')
-                                    .eq('kode_produk', String(product).trim().toUpperCase())
-                                    .single();
-
-                                if (!produkError && produkRow && produkRow.is_aktif) {
-                                    nominalPotong = Number(produkRow.harga_jual) || 0;
-                                }
-                            }
-
-                            // 2. Fallback nominal jika tidak ada di produk_pulsa
-                            if (nominalPotong <= 0) {
-                                nominalPotong = ambilNominalPotong(data, responseText);
-                            }
-
-                            // 3. Potong saldo user secara atomik via RPC
-                            if (userID && nominalPotong > 0) {
-                                const { data: rpcResult, error: rpcError } = await supabase.rpc(
-                                    'potong_saldo_transaksi',
-                                    {
-                                        p_user_id: String(userID),
-                                        p_nominal: nominalPotong,
-                                        p_kode_transaksi: String(refID)
-                                    }
-                                );
-
-                                if (rpcError) {
-                                    console.error("Gagal potong saldo (RPC Error):", rpcError.message);
-                                } else if (rpcResult?.ok) {
-                                    pesanSuksesReseller = buatPesanSuksesReseller({
-                                        kodeTransaksi: refID,
-                                        produk: product,
-                                        tujuan: dest,
-                                        pesanOtoMax: responseText,
-                                        nominalPotong,
-                                        saldoTerbaru: rpcResult.saldo_terbaru
-                                    });
-
-                                    if (insertedRow?.id) {
-                                        const { error: updatePesanError } = await supabase
-                                            .from('inbox_direct_transaksi')
-                                            .update({ pesan_sukses_ke_reseller: pesanSuksesReseller })
-                                            .eq('id', insertedRow.id);
-
-                                        if (updatePesanError) {
-                                            console.error("Gagal simpan pesan_sukses_ke_reseller:", updatePesanError.message);
-                                        } else {
-                                            console.log("Saldo berhasil dipotong & pesan reseller tersimpan:", {
-                                                refID,
-                                                nominalPotong,
-                                                saldoTerbaru: rpcResult.saldo_terbaru
-                                            });
-                                        }
-                                    }
-                                } else {
-                                    console.warn("Potong saldo tidak dieksekusi:", rpcResult);
-                                }
-                            } else {
-                                console.warn("Transaksi sukses, tetapi userID atau nominal potong saldo tidak valid:", {
-                                    refID,
-                                    userID,
-                                    nominalPotong
-                                });
-                            }
-                        }
-                    }
-
-                    res.writeHead(200, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                    res.end(pesanSuksesReseller || responseText);
-
-                } catch (parseErr) {
-                    res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                    res.end('Format JSON tidak valid.');
-                }
-            });
-            return;
-        }
-
-        // Endpoint ambil riwayat transaksi dari Supabase
-        if (req.method === 'GET' && parsedUrl.pathname === '/riwayat') {
-            if (!supabaseUrl || !supabaseKey) {
-                res.writeHead(500, { 'Content-Type': 'application/json; charset=UTF-8' });
-                res.end(JSON.stringify({ status: false, message: 'Konfigurasi Supabase belum lengkap.' }));
-                return;
-            }
-
-            const refID = parsedUrl.searchParams.get('refID') || '';
-            const userID = parsedUrl.searchParams.get('userID') || '';
-            const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '20', 10);
-            const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 20;
-
-            let query = supabase
-                .from('inbox_direct_transaksi')
-                .select('id, kode_transaksi, tujuan, pesan, pesan_sukses_ke_reseller, tgl_entri, user_id')
-                .order('tgl_entri', { ascending: false })
-                .limit(limit);
-
-            // if (refID) {
-            //     query = query.eq('kode_transaksi', refID);
-            // }
-            if (userID) {
-                query = query.eq('user_id', userID);
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-                console.error("Supabase Select Error:", error.message);
-                res.writeHead(500, { 'Content-Type': 'application/json; charset=UTF-8' });
-                res.end(JSON.stringify({ status: false, message: 'Gagal mengambil riwayat dari Supabase.' }));
-                return;
-            }
-
-            const transaksiList = data || [];
-            const kodeList = [...new Set(
-                transaksiList.map(item => item.kode_transaksi).filter(Boolean)
-            )];
-
-            const mutasiByKode = new Map();
-            if (kodeList.length > 0) {
-                const { data: mutasiRows, error: mutasiError } = await supabase
-                    .from('mutasi_saldo')
-                    .select('kode_transaksi, saldo_sebelumnya, saldo_sesudahnya, nominal')
-                    .in('kode_transaksi', kodeList);
-
-                if (mutasiError) {
-                    console.error("Supabase Mutasi Error:", mutasiError.message);
-                } else {
-                    for (const m of (mutasiRows || [])) {
-                        mutasiByKode.set(m.kode_transaksi, m);
-                    }
-                }
-            }
-
-            const rows = transaksiList.map(row => {
-                const mutasi = mutasiByKode.get(row.kode_transaksi);
-                return {
-                    ...row,
-                    pesan_reseller: row.pesan_sukses_ke_reseller || row.pesan,
-                    saldo_sebelumnya: mutasi ? Number(mutasi.saldo_sebelumnya) : null,
-                    saldo_terbaru: mutasi ? Number(mutasi.saldo_sesudahnya) : null
-                };
-            });
-
-            res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
-            res.end(JSON.stringify({
-                status: true,
-                data: rows
-            }));
-            return;
-        }
-
-        // Halaman Admin dari folder public/admin-saldo.html
-        if (req.method === 'GET' && (parsedUrl.pathname === '/admin-saldo' || parsedUrl.pathname === '/admin-saldo.html')) {
-            const filePath = path.join(__dirname, 'public', 'admin-saldo.html');
-            fs.readFile(filePath, (err, content) => {
-                if (err) {
-                    res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                    res.end('Halaman admin tidak ditemukan.');
-                    return;
-                }
-                res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
-                res.end(content);
-            });
-            return;
-        }
-
-        // Login Admin
-        if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/login') {
-            const { username, password } = await bacaBodyJSON(req);
-            if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
-                const token = buatAdminToken(username);
-                return kirimJSON(res, 200, { status: true, token, username });
-            }
-            return kirimJSON(res, 401, { status: false, message: 'Username atau password admin salah.' });
-        }
-
-        // Semua route /api/admin/* selain login wajib token valid
-        if (parsedUrl.pathname.startsWith('/api/admin/')) {
-            const adminSession = verifikasiAdminToken(req);
-            if (!adminSession) {
-                return kirimJSON(res, 401, { status: false, message: 'Sesi admin tidak valid atau sudah kedaluwarsa.' });
-            }
-
-            if (!supabaseUrl || !supabaseKey) {
-                return kirimJSON(res, 500, { status: false, message: 'Konfigurasi Supabase belum lengkap.' });
-            }
-
-            // --- RESELLER (USERS) ---
-            if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/resellers') {
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('id, auth_user_id, nama, email, no_hp, saldo, status, created_at')
-                    .order('id', { ascending: false });
-                if (error) return kirimJSON(res, 500, { status: false, message: error.message });
-                return kirimJSON(res, 200, { status: true, data: data || [] });
-            }
-
-            if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/resellers') {
-                const { auth_user_id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
-                if (!nama) return kirimJSON(res, 400, { status: false, message: 'Nama reseller wajib diisi.' });
-
-                const authUserIdClean = auth_user_id && String(auth_user_id).trim() !== ''
-                    ? String(auth_user_id).trim()
-                    : null;
-
-                const { data, error } = await supabase
-                    .from('users')
-                    .insert([{
-                        auth_user_id: authUserIdClean,
-                        nama: String(nama).trim(),
-                        email: email ? String(email).trim() : null,
-                        no_hp: no_hp ? String(no_hp).trim() : null,
-                        saldo: Number(saldo || 0),
-                        status: status || 'aktif'
-                    }])
-                    .select()
-                    .single();
-
-                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
-                return kirimJSON(res, 201, { status: true, data });
-            }
-
-            if (req.method === 'PUT' && parsedUrl.pathname === '/api/admin/resellers') {
-                const { id, auth_user_id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
-                if (!id) return kirimJSON(res, 400, { status: false, message: 'ID reseller wajib diisi.' });
-
-                const authUserIdClean = auth_user_id && String(auth_user_id).trim() !== ''
-                    ? String(auth_user_id).trim()
-                    : null;
-
-                const { data, error } = await supabase
-                    .from('users')
-                    .update({
-                        auth_user_id: authUserIdClean,
-                        nama: String(nama).trim(),
-                        email: email ? String(email).trim() : null,
-                        no_hp: no_hp ? String(no_hp).trim() : null,
-                        saldo: Number(saldo ?? 0),
-                        status: status || 'aktif',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', id)
-                    .select()
-                    .single();
-
-                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
-                return kirimJSON(res, 200, { status: true, data });
-            }
-
-            if (req.method === 'DELETE' && parsedUrl.pathname === '/api/admin/resellers') {
-                const id = parsedUrl.searchParams.get('id');
-                if (!id) return kirimJSON(res, 400, { status: false, message: 'Parameter id wajib ada.' });
-
-                const { error } = await supabase.from('users').delete().eq('id', id);
-                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
-                return kirimJSON(res, 200, { status: true, message: 'Reseller dihapus.' });
-            }
-
-            // --- PRODUK PULSA ---
-            if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/produk') {
-                const { data, error } = await supabase
-                    .from('produk_pulsa')
-                    .select('*')
-                    .order('id', { ascending: false });
-                if (error) return kirimJSON(res, 500, { status: false, message: error.message });
-                return kirimJSON(res, 200, { status: true, data: data || [] });
-            }
-
-            if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/produk') {
-                const bodyObj = await bacaBodyJSON(req);
-                if (!bodyObj.kode_produk || !bodyObj.nama_produk || !bodyObj.provider) {
-                    return kirimJSON(res, 400, { status: false, message: 'Kode produk, nama produk, dan provider wajib diisi.' });
-                }
-
-                const { data, error } = await supabase
-                    .from('produk_pulsa')
-                    .insert([{
-                        kode_produk: String(bodyObj.kode_produk).trim().toUpperCase(),
-                        nama_produk: String(bodyObj.nama_produk).trim(),
-                        kategori: bodyObj.kategori || 'Pulsa',
-                        provider: String(bodyObj.provider).trim(),
-                        nominal: Number(bodyObj.nominal || 0),
-                        harga_modal: Number(bodyObj.harga_modal || 0),
-                        harga_jual: Number(bodyObj.harga_jual || 0),
-                        is_aktif: Boolean(bodyObj.is_aktif ?? true),
-                        keterangan: bodyObj.keterangan || null
-                    }])
-                    .select()
-                    .single();
-
-                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
-                return kirimJSON(res, 201, { status: true, data });
-            }
-
-            if (req.method === 'PUT' && parsedUrl.pathname === '/api/admin/produk') {
-                const bodyObj = await bacaBodyJSON(req);
-                if (!bodyObj.id) return kirimJSON(res, 400, { status: false, message: 'ID produk wajib diisi.' });
-
-                const { data, error } = await supabase
-                    .from('produk_pulsa')
-                    .update({
-                        kode_produk: String(bodyObj.kode_produk).trim().toUpperCase(),
-                        nama_produk: String(bodyObj.nama_produk).trim(),
-                        kategori: bodyObj.kategori || 'Pulsa',
-                        provider: String(bodyObj.provider).trim(),
-                        nominal: Number(bodyObj.nominal || 0),
-                        harga_modal: Number(bodyObj.harga_modal || 0),
-                        harga_jual: Number(bodyObj.harga_jual || 0),
-                        is_aktif: Boolean(bodyObj.is_aktif),
-                        keterangan: bodyObj.keterangan || null,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', bodyObj.id)
-                    .select()
-                    .single();
-
-                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
-                return kirimJSON(res, 200, { status: true, data });
-            }
-
-            if (req.method === 'DELETE' && parsedUrl.pathname === '/api/admin/produk') {
-                const id = parsedUrl.searchParams.get('id');
-                if (!id) return kirimJSON(res, 400, { status: false, message: 'Parameter id wajib ada.' });
-
-                const { error } = await supabase.from('produk_pulsa').delete().eq('id', id);
-                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
-                return kirimJSON(res, 200, { status: true, message: 'Produk dihapus.' });
-            }
-
-            // --- LOG TRANSAKSI (DENGAN PAGINATION) ---
-            if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/transaksi') {
-                const kodeFilter = (parsedUrl.searchParams.get('kode') || '').trim();
-                const userFilter = (parsedUrl.searchParams.get('user_id') || '').trim();
-                const pageParam = parseInt(parsedUrl.searchParams.get('page') || '1', 10);
-                const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '25', 10);
-
-                const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-                const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : 25;
-                const from = (page - 1) * limit;
-                const to = from + limit - 1;
-
-                let query = supabase
-                    .from('inbox_direct_transaksi')
-                    .select('id, kode_transaksi, tujuan, pesan, pesan_sukses_ke_reseller, tgl_entri, user_id', { count: 'exact' })
-                    .order('id', { ascending: false })
-                    .range(from, to);
-
-                if (kodeFilter) {
-                    query = query.ilike('kode_transaksi', `%${kodeFilter}%`);
-                }
-                if (userFilter) {
-                    query = query.eq('user_id', userFilter);
-                }
-
-                const { data, error, count } = await query;
-                if (error) {
-                    return kirimJSON(res, 500, { status: false, message: error.message });
-                }
-
-                const list = data || [];
-                const kodeList = [...new Set(list.map(x => x.kode_transaksi).filter(Boolean))];
-                const userIds = [...new Set(list.map(x => x.user_id).filter(Boolean))];
-
-                const mutasiMap = new Map();
-                if (kodeList.length > 0) {
-                    const { data: mutasiRows, error: mutasiErr } = await supabase
-                        .from('mutasi_saldo')
-                        .select('kode_transaksi, nominal, saldo_sebelumnya, saldo_sesudahnya')
-                        .in('kode_transaksi', kodeList);
-
-                    if (!mutasiErr && mutasiRows) {
-                        for (const m of mutasiRows) {
-                            mutasiMap.set(m.kode_transaksi, m);
-                        }
-                    }
-                }
-
-                const userMap = new Map();
-                if (userIds.length > 0) {
-                    const { data: userRows, error: userErr } = await supabase
-                        .from('users')
-                        .select('id, nama')
-                        .in('id', userIds);
-
-                    if (!userErr && userRows) {
-                        for (const u of userRows) {
-                            userMap.set(String(u.id), u.nama);
-                        }
-                    }
-                }
-
-                const rows = list.map(item => {
-                    const mutasi = mutasiMap.get(item.kode_transaksi);
-                    return {
-                        ...item,
-                        nama_reseller: item.user_id ? (userMap.get(String(item.user_id)) || '-') : '-',
-                        pesan_reseller: item.pesan_sukses_ke_reseller || item.pesan,
-                        nominal_potong: mutasi ? Number(mutasi.nominal) : null,
-                        saldo_sebelumnya: mutasi ? Number(mutasi.saldo_sebelumnya) : null,
-                        saldo_terbaru: mutasi ? Number(mutasi.saldo_sesudahnya) : null
-                    };
-                });
-
-                const total = count ?? rows.length;
-                const totalPages = Math.max(1, Math.ceil(total / limit));
-
-                return kirimJSON(res, 200, {
-                    status: true,
-                    data: rows,
-                    pagination: {
-                        page,
-                        limit,
-                        total,
-                        totalPages
-                    }
-                });
-            }
-
-            return kirimJSON(res, 404, { status: false, message: 'Endpoint admin tidak ditemukan.' });
-        }
-
-        res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
-        res.end('Endpoint tidak ditemukan.');
-
-    } catch (err) {
-        console.error("Server Error:", err.message);
-        res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
-        res.end('Server Error: ' + err.message);
+    // --- PRODUK PULSA ---
+    async function loadProduk() {
+      const res = await adminFetch('/api/admin/produk');
+      if (!res.status) return;
+      produkCache = res.data || [];
+      const tbody = document.getElementById('produkTableBody');
+      tbody.innerHTML = produkCache.map(p => `
+        <tr>
+          <td><strong>${p.kode_produk}</strong></td>
+          <td>${p.nama_produk}</td>
+          <td>${p.provider}</td>
+          <td>${fmtRp(p.harga_modal)}</td>
+          <td><strong>${fmtRp(p.harga_jual)}</strong></td>
+          <td><span class="${p.is_aktif ? 'badge-ok' : 'badge-off'}">${p.is_aktif ? 'Aktif' : 'Nonaktif'}</span></td>
+          <td class="actions">
+            <button class="btn-secondary btn-sm" onclick="editProduk(${p.id})">Edit</button>
+            <button class="btn-danger btn-sm" onclick="deleteProduk(${p.id})">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
     }
-});
 
-// Cek IP publik keluar
-fetch('https://api.ipify.org?format=json')
-    .then(res => res.json())
-    .then(data => console.log("IP Publik Railway saat keluar:", data.ip))
-    .catch(err => console.error("Gagal cek IP:", err.message));
+    function editProduk(id) {
+      const p = produkCache.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('produkFormTitle').textContent = 'Edit Produk #' + p.id;
+      document.getElementById('produkId').value = p.id;
+      document.getElementById('produkKode').value = p.kode_produk || '';
+      document.getElementById('produkNama').value = p.nama_produk || '';
+      document.getElementById('produkProvider').value = p.provider || '';
+      document.getElementById('produkKategori').value = p.kategori || 'Pulsa';
+      document.getElementById('produkNominal').value = p.nominal ?? 0;
+      document.getElementById('produkModal').value = p.harga_modal ?? 0;
+      document.getElementById('produkJual').value = p.harga_jual ?? 0;
+      document.getElementById('produkAktif').value = String(Boolean(p.is_aktif));
+    }
 
-const PORT = process.env.PORT || 3000;
-// Tambahkan '0.0.0.0' agar server dapat diakses publik via Railway dengan stabil
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server berjalan di port ${PORT}`);
-});
+    function resetProdukForm() {
+      document.getElementById('produkFormTitle').textContent = 'Tambah Produk Pulsa';
+      document.getElementById('produkForm').reset();
+      document.getElementById('produkId').value = '';
+      document.getElementById('produkMsg').textContent = '';
+    }
+
+    document.getElementById('produkForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('produkMsg').textContent = '';
+      const id = document.getElementById('produkId').value;
+      const payload = {
+        ...(id ? { id: Number(id) } : {}),
+        kode_produk: document.getElementById('produkKode').value,
+        nama_produk: document.getElementById('produkNama').value,
+        provider: document.getElementById('produkProvider').value,
+        kategori: document.getElementById('produkKategori').value,
+        nominal: Number(document.getElementById('produkNominal').value || 0),
+        harga_modal: Number(document.getElementById('produkModal').value || 0),
+        harga_jual: Number(document.getElementById('produkJual').value || 0),
+        is_aktif: document.getElementById('produkAktif').value === 'true'
+      };
+      const res = await adminFetch('/api/admin/produk', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (!res.status) {
+        document.getElementById('produkMsg').textContent = res.message;
+        return;
+      }
+      resetProdukForm();
+      loadProduk();
+    });
+
+    async function deleteProduk(id) {
+      if (!confirm('Hapus produk #' + id + '?')) return;
+      const res = await adminFetch('/api/admin/produk?id=' + id, { method: 'DELETE' });
+      if (res.status) loadProduk();
+    }
+
+    // --- LOG TRANSAKSI ---
+    function resetFilterLog() {
+      document.getElementById('filterKode').value = '';
+      document.getElementById('filterUserId').value = '';
+      document.getElementById('filterLimit').value = '50';
+      loadLogTransaksi();
+    }
+
+    async function loadLogTransaksi() {
+      const kode = encodeURIComponent(document.getElementById('filterKode').value.trim());
+      const userId = encodeURIComponent(document.getElementById('filterUserId').value.trim());
+      const limit = encodeURIComponent(document.getElementById('filterLimit').value || '50');
+
+      const res = await adminFetch(`/api/admin/transaksi?kode=${kode}&user_id=${userId}&limit=${limit}`);
+      if (!res.status) return;
+
+      const list = res.data || [];
+      const tbody = document.getElementById('logTableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Belum ada data transaksi.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(item => `
+        <tr>
+          <td>${fmtWaktu(item.tgl_entri)}</td>
+          <td><strong>${item.kode_transaksi || '-'}</strong></td>
+          <td>${item.nama_reseller || '-'} <small style="color:var(--muted);">(#${item.user_id ?? '-'})</small></td>
+          <td>${item.tujuan || '-'}</td>
+          <td><div class="pre-wrap">${item.pesan_sukses_ke_reseller || '-'}</div></td>
+          <td><div class="pre-wrap" style="color:var(--muted);">${item.pesan || '-'}</div></td>
+          <td>
+            <div class="pre-wrap">
+              Awal: ${fmtRp(item.saldo_sebelumnya)}<br/>
+              Potong: ${fmtRp(item.nominal_potong)}<br/>
+              <strong>Akhir: ${fmtRp(item.saldo_terbaru)}</strong>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    if (getToken()) {
+      showDashboard('admin');
+    }
+  </script>
+</body>
+</html>
