@@ -61,23 +61,37 @@ function bacaBodyJSON(req) {
 }
 
 // Cek apakah isi kolom `pesan` menandakan transaksi sukses
+// Cek apakah respon OtoMax benar-benar menandakan transaksi sukses (bukan gagal/pending/timeout)
 function isTransaksiSukses(pesan = '') {
     const teks = String(pesan).toUpperCase();
-    const adaKataGagal = teks.includes('GAGAL') || teks.includes('SALDO TIDAK CUKUP') || teks.includes('INVALID');
-    const adaKataSukses = teks.includes('SUKSES') || teks.includes('BERHASIL');
-    return adaKataSukses && !adaKataGagal;
+
+    // Tolak jika jelas gagal, timeout, atau masih menunggu proses
+    const isGagalAtauTimeout =
+        /\bGAGAL\b/.test(teks) ||
+        /\bTIMEOUT\b/.test(teks) ||
+        /RC\s*:\s*(GAGAL|TIMEOUT)/.test(teks) ||
+        /STS\s+(GAGAL|TIMEOUT)/.test(teks) ||
+        /AKAN DIPROSES/.test(teks) ||
+        /MENUNGGU JAWABAN/.test(teks);
+
+    if (isGagalAtauTimeout) {
+        return false;
+    }
+
+    // Terima jika ada indikasi sukses (termasuk kasus "sdh pernah ... sts Sukses" atau "RC:Sukses")
+    return /\bSUKSES\b/.test(teks) || /RC\s*:\s*SUKSES/.test(teks) || /STS\s+SUKSES/.test(teks);
 }
 
-// Ambil nominal potong saldo: prioritas dari body `harga`, fallback dari pola harga di `pesan`
+// Ambil nominal potong saldo: prioritas harga_jual/body, fallback ke "Stok Terpotong"
 function ambilNominalPotong(data, pesan = '') {
     const hargaBody = Number(data.harga ?? data.amount ?? data.nominal ?? 0);
     if (Number.isFinite(hargaBody) && hargaBody > 0) {
         return hargaBody;
     }
 
-    const matchHarga = String(pesan).match(/(?:HARGA|RP\.?|NOMINAL|BIAYA)\s*:?\s*([\d.,]+)/i);
-    if (matchHarga && matchHarga[1]) {
-        const bersih = Number(matchHarga[1].replace(/[.,]/g, ''));
+    const matchStokPotong = String(pesan).match(/STOK\s+TERPOTONG\s*:?\s*([\d.]+)/i);
+    if (matchStokPotong && matchStokPotong[1]) {
+        const bersih = Number(matchStokPotong[1].replace(/\./g, ''));
         if (Number.isFinite(bersih) && bersih > 0) {
             return bersih;
         }
@@ -88,8 +102,14 @@ function ambilNominalPotong(data, pesan = '') {
 
 // Ekstrak SN umum dari respon OtoMax jika tersedia
 function ekstrakSN(pesan = '') {
-    const matchSN = String(pesan).match(/\bSN\s*[:=/#-]?\s*([A-Za-z0-9-]{6,})/i);
-    return matchSN ? matchSN[1] : null;
+   const teks = String(pesan);
+    const matchRef = teks.match(/SN\/Ref\s*:?\s*([0-9-]+(?:\s*\/\s*[^\r\n.]+)?)/i);
+    if (matchRef && matchRef[1]) {
+        return matchRef[1].replace(/\s+/g, ' ').trim();
+    }
+
+    const matchSN = teks.match(/\bSN\s*[:=/#-]?\s*([A-Za-z0-9-]{6,})/i);
+    return matchSN ? matchSN[1].trim() : null;
 }
 
 // Format rupiah sederhana
@@ -101,7 +121,16 @@ function formatRupiah(angka) {
 // Susun pesan khusus untuk reseller saat transaksi sukses & saldo terpotong
 function buatPesanSuksesReseller({ kodeTransaksi, produk, tujuan, pesanOtoMax, nominalPotong, saldoTerbaru }) {
     const sn = ekstrakSN(pesanOtoMax);
-    const barisSN = sn ? `\nSN: ${sn}` : '';
+    const pln = ekstrakInfoPLN(pesanOtoMax);
+
+    const barisSN = sn ? `\nSN/Ref: ${sn}` : '';
+    const barisPln = [
+        pln.idPel ? `IDPel: ${pln.idPel}` : null,
+        pln.idMeter ? `IDMeter: ${pln.idMeter}` : null,
+        pln.rpToken ? `Token: Rp${pln.rpToken}` : null
+    ].filter(Boolean).join(' | ');
+
+    const barisDetailPln = barisPln ? `\n${barisPln}` : '';
     const barisSaldo = saldoTerbaru !== undefined && saldoTerbaru !== null
         ? `\nSisa Saldo: ${formatRupiah(saldoTerbaru)}`
         : '';
@@ -109,7 +138,7 @@ function buatPesanSuksesReseller({ kodeTransaksi, produk, tujuan, pesanOtoMax, n
     return [
         `Transaksi SUKSES (${kodeTransaksi})`,
         `Produk: ${produk}`,
-        `Tujuan: ${tujuan}${barisSN}`,
+        `Tujuan: ${tujuan}${barisSN}${barisDetailPln}`,
         `Potongan Saldo: ${formatRupiah(nominalPotong)}${barisSaldo}`
     ].join('\n');
 }
