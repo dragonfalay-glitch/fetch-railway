@@ -519,17 +519,23 @@ const server = http.createServer(async (req, res) => {
                 return kirimJSON(res, 200, { status: true, message: 'Produk dihapus.' });
             }
             // --- LOG TRANSAKSI ---
+            // --- LOG TRANSAKSI (DENGAN PAGINATION) ---
             if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/transaksi') {
                 const kodeFilter = (parsedUrl.searchParams.get('kode') || '').trim();
                 const userFilter = (parsedUrl.searchParams.get('user_id') || '').trim();
-                const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '50', 10);
-                const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : 50;
+                const pageParam = parseInt(parsedUrl.searchParams.get('page') || '1', 10);
+                const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '25', 10);
+
+                const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+                const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : 25;
+                const from = (page - 1) * limit;
+                const to = from + limit - 1;
 
                 let query = supabase
                     .from('inbox_direct_transaksi')
-                    .select('id, kode_transaksi, tujuan, pesan, pesan_sukses_ke_reseller, tgl_entri, user_id')
+                    .select('id, kode_transaksi, tujuan, pesan, pesan_sukses_ke_reseller, tgl_entri, user_id', { count: 'exact' })
                     .order('id', { ascending: false })
-                    .limit(limit);
+                    .range(from, to);
 
                 if (kodeFilter) {
                     query = query.ilike('kode_transaksi', `%${kodeFilter}%`);
@@ -538,7 +544,7 @@ const server = http.createServer(async (req, res) => {
                     query = query.eq('user_id', userFilter);
                 }
 
-                const { data, error } = await query;
+                const { data, error, count } = await query;
                 if (error) {
                     return kirimJSON(res, 500, { status: false, message: error.message });
                 }
@@ -587,7 +593,19 @@ const server = http.createServer(async (req, res) => {
                     };
                 });
 
-                return kirimJSON(res, 200, { status: true, data: rows });
+                const total = count ?? rows.length;
+                const totalPages = Math.max(1, Math.ceil(total / limit));
+
+                return kirimJSON(res, 200, {
+                    status: true,
+                    data: rows,
+                    pagination: {
+                        page,
+                        limit,
+                        total,
+                        totalPages
+                    }
+                });
             }
 
             return kirimJSON(res, 404, { status: false, message: 'Endpoint admin tidak ditemukan.' });
