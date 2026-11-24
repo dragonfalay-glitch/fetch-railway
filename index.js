@@ -9,10 +9,10 @@ const supabaseUrl = process.env.URL;
 const supabaseKey = process.env.PUBLIC;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
-// Admin sesi
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'f1ec639bf7ebae552dcec304363635c7bce9b14943f61fd8a295c73986508b9b';
+// Admin sesi (pastikan ADMIN_USER, ADMIN_PASS, dan ADMIN_SECRET terisi di Railway)
+const ADMIN_USER = process.env.ADMIN_USER || '';
+const ADMIN_PASS = process.env.ADMIN_PASS || '';
+const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
 
 function buatAdminToken(username) {
     const payload = Buffer.from(JSON.stringify({
@@ -296,9 +296,9 @@ const server = http.createServer(async (req, res) => {
                 .order('tgl_entri', { ascending: false })
                 .limit(limit);
 
-            // if (refID) {
-            //     query = query.eq('kode_transaksi', refID);
-            // }
+            if (refID) {
+                query = query.eq('kode_transaksi', refID);
+            }
             if (userID) {
                 query = query.eq('user_id', userID);
             }
@@ -351,7 +351,7 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
-        // Halaman Admin dari folder public/admin.html
+        // Halaman Admin dari folder public/admin-saldo.html
         if (req.method === 'GET' && (parsedUrl.pathname === '/admin-saldo' || parsedUrl.pathname === '/admin-saldo.html')) {
             const filePath = path.join(__dirname, 'public', 'admin-saldo.html');
             fs.readFile(filePath, (err, content) => {
@@ -369,7 +369,7 @@ const server = http.createServer(async (req, res) => {
         // Login Admin
         if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/login') {
             const { username, password } = await bacaBodyJSON(req);
-            if (username === ADMIN_USER && password === ADMIN_PASS) {
+            if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
                 const token = buatAdminToken(username);
                 return kirimJSON(res, 200, { status: true, token, username });
             }
@@ -518,7 +518,7 @@ const server = http.createServer(async (req, res) => {
                 if (error) return kirimJSON(res, 400, { status: false, message: error.message });
                 return kirimJSON(res, 200, { status: true, message: 'Produk dihapus.' });
             }
-            // --- LOG TRANSAKSI ---
+
             // --- LOG TRANSAKSI (DENGAN PAGINATION) ---
             if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/transaksi') {
                 const kodeFilter = (parsedUrl.searchParams.get('kode') || '').trim();
