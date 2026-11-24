@@ -1,576 +1,440 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manajemen Saldo User — Admin</title>
+  <title>Dashboard Admin - Reseller & Produk Pulsa</title>
   <style>
     :root {
       --bg: #f4f6f9;
-      --surface: #ffffff;
-      --surface-2: #f8fafc;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
-      --success: #16a34a;
       --danger: #dc2626;
-      --warning: #d97706;
-      --radius: 12px;
-      --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --success: #16a34a;
+      --border: #e5e7eb;
     }
-
-    [data-theme="dark"] {
-      --bg: #0b1120;
-      --surface: #111827;
-      --surface-2: #1e293b;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: #334155;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --success: #22c55e;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    .container {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 20px 16px 48px;
-    }
-
-    header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .brand h1 {
-      margin: 0;
-      font-size: 1.25rem;
-    }
-
-    .brand p {
-      margin: 2px 0 0;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
-    }
-
-    .card-title {
-      margin: 0 0 14px;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-    }
-
-    .form-group {
-      margin-bottom: 12px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 500;
-      margin-bottom: 5px;
-      color: var(--muted);
-    }
-
-    input, select {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface-2);
-      color: var(--text);
-      font-size: 0.92rem;
-    }
-
-    input:focus, select:focus {
-      outline: 2px solid var(--primary);
-      outline-offset: 1px;
-    }
-
-    button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s ease, background 0.15s ease;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: #fff;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: var(--primary-hover);
-    }
-
-    .btn-success {
-      background: var(--success);
-      color: #fff;
-    }
-
-    .btn-danger {
-      background: var(--danger);
-      color: #fff;
-    }
-
-    .btn-outline {
-      background: transparent;
-      border-color: var(--border);
-      color: var(--text);
-    }
-
-    .btn-sm {
-      padding: 6px 10px;
-      font-size: 0.8rem;
-    }
-
-    .row-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .alert {
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      margin-bottom: 14px;
-      display: none;
-    }
-
-    .alert.show { display: block; }
-    .alert.ok {
-      background: rgba(22, 163, 74, 0.14);
-      border: 1px solid rgba(22, 163, 74, 0.35);
-      color: var(--success);
-    }
-    .alert.err {
-      background: rgba(220, 38, 38, 0.14);
-      border: 1px solid rgba(220, 38, 38, 0.35);
-      color: var(--danger);
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    th {
-      color: var(--muted);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .saldo-val {
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .hidden { display: none !important; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    .container { max-width: 1120px; margin: 24px auto; padding: 0 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .login-box { max-width: 380px; margin: 80px auto; }
+    h1, h2, h3 { margin-top: 0; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    input, select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    button { padding: 9px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #e5e7eb; color: #111827; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-btn { background: #e5e7eb; color: #374151; }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; }
+    th { background: #f9fafb; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    .badge-ok { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+    .badge-off { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+    .msg { font-size: 13px; margin-top: 8px; color: var(--danger); }
+    .hidden { display: none; }
+    .actions { display: flex; gap: 6px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="brand">
-        <h1>Manajemen Saldo User</h1>
-        <p>Panel Admin PPOB &amp; Saldo Reseller/User</p>
-      </div>
-      <div class="header-actions">
-        <button type="button" class="btn-outline btn-sm" id="btnTheme">Mode Gelap</button>
-        <button type="button" class="btn-outline btn-sm hidden" id="btnLogout">Keluar</button>
-      </div>
-    </header>
 
-    <div id="alertBox" class="alert"></div>
-
-    <!-- Form Login Admin -->
-    <section id="loginSection" class="card" style="max-width: 440px; margin: 24px auto;">
-      <h2 class="card-title">Login Admin</h2>
+  <!-- HALAMAN LOGIN ADMIN -->
+  <div id="loginView" class="container">
+    <div class="card login-box">
+      <h2>Login Admin</h2>
       <form id="loginForm">
-        <div class="form-group">
-          <label for="apiBase">Base URL Server Railway</label>
-          <input type="url" id="apiBase" placeholder="https://nama-app.up.railway.app" required />
+        <div style="margin-bottom:12px;">
+          <label>Username</label>
+          <input type="text" id="loginUser" required placeholder="admin" />
         </div>
-        <div class="form-group">
-          <label for="adminUser">Username</label>
-          <input type="text" id="adminUser" value="admin" required />
+        <div style="margin-bottom:14px;">
+          <label>Password</label>
+          <input type="password" id="loginPass" required placeholder="••••••••" />
         </div>
-        <div class="form-group">
-          <label for="adminPass">Password Admin</label>
-          <input type="password" id="adminPass" placeholder="Masukkan password admin" required />
-        </div>
-        <button type="submit" class="btn-primary" id="btnLogin" style="width: 100%;">Masuk</button>
+        <button type="submit" class="btn-primary" style="width:100%;">Masuk</button>
+        <div id="loginError" class="msg"></div>
       </form>
-    </section>
+    </div>
+  </div>
 
-    <!-- Panel Manajemen Saldo (tampil setelah login) -->
-    <main id="dashboardSection" class="hidden">
-      <div class="grid-2">
-        <!-- Form Top-up / Potong Saldo -->
-        <section class="card">
-          <h2 class="card-title">Top-up / Potong Saldo (Delta)</h2>
-          <form id="adjustForm">
-            <div class="form-group">
-              <label for="adjUserId">User ID</label>
-              <input type="number" id="adjUserId" min="1" placeholder="Contoh: 1" required />
+  <!-- HALAMAN DASHBOARD ADMIN -->
+  <div id="dashboardView" class="container hidden">
+    <div class="topbar">
+      <div>
+        <h2 style="margin-bottom:2px;">Dashboard Admin</h2>
+        <small id="adminInfo" style="color:var(--muted);"></small>
+      </div>
+      <button class="btn-secondary" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="tabs">
+      <button id="tabReseller" class="tab-btn active" onclick="switchTab('reseller')">Manajemen Reseller</button>
+      <button id="tabProduk" class="tab-btn" onclick="switchTab('produk')">Manajemen Produk Pulsa</button>
+    </div>
+
+    <!-- TAB RESELLER -->
+    <div id="sectionReseller">
+      <div class="card">
+        <h3 id="resellerFormTitle">Tambah Reseller</h3>
+        <form id="resellerForm">
+          <input type="hidden" id="resellerId" />
+          <div class="row">
+            <div>
+              <label>Nama Reseller *</label>
+              <input type="text" id="resellerNama" required />
             </div>
-            <div class="form-group">
-              <label for="adjMode">Aksi</label>
-              <select id="adjMode">
-                <option value="topup">Tambah Saldo (+)</option>
-                <option value="deduct">Potong Saldo (-)</option>
+            <div>
+              <label>No. HP</label>
+              <input type="text" id="resellerHp" />
+            </div>
+            <div>
+              <label>Email</label>
+              <input type="email" id="resellerEmail" />
+            </div>
+            <div>
+              <label>Saldo (Rp)</label>
+              <input type="number" id="resellerSaldo" step="any" value="0" />
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="resellerStatus">
+                <option value="aktif">aktif</option>
+                <option value="nonaktif">nonaktif</option>
               </select>
             </div>
-            <div class="form-group">
-              <label for="adjAmount">Nominal (IDR)</label>
-              <input type="number" id="adjAmount" min="1" step="1" placeholder="Contoh: 50000" required />
-            </div>
-            <button type="submit" class="btn-success" id="btnAdjust">Simpan Perubahan</button>
-          </form>
-        </section>
-
-        <!-- Form Set Saldo Absolut -->
-        <section class="card">
-          <h2 class="card-title">Atur Saldo Pasti (Set Saldo)</h2>
-          <form id="setForm">
-            <div class="form-group">
-              <label for="setUserId">User ID</label>
-              <input type="number" id="setUserId" min="1" placeholder="Contoh: 1" required />
-            </div>
-            <div class="form-group">
-              <label for="setAmount">Saldo Baru (IDR)</label>
-              <input type="number" id="setAmount" min="0" step="1" placeholder="Contoh: 100000" required />
-            </div>
-            <button type="submit" class="btn-primary" id="btnSet">Tetapkan Saldo</button>
-          </form>
-        </section>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn-primary">Simpan Reseller</button>
+            <button type="button" class="btn-secondary" onclick="resetResellerForm()">Batal</button>
+          </div>
+          <div id="resellerMsg" class="msg"></div>
+        </form>
       </div>
 
-      <!-- Tabel Daftar Saldo User -->
-      <section class="card">
-        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px;">
-          <h2 class="card-title" style="margin: 0;">Daftar Saldo User</h2>
-          <div class="row-actions">
-            <input type="text" id="searchUserId" placeholder="Cari User ID..." style="width: 150px; padding: 7px 10px;" />
-            <button type="button" class="btn-outline btn-sm" id="btnRefresh">Refresh</button>
-          </div>
-        </div>
-
-        <div class="table-wrap">
+      <div class="card">
+        <h3>Daftar Reseller</h3>
+        <div style="overflow-x:auto;">
           <table>
             <thead>
               <tr>
-                <th>User ID</th>
+                <th>ID</th>
+                <th>Nama</th>
+                <th>No. HP</th>
                 <th>Saldo</th>
-                <th>Terakhir Diupdate</th>
-                <th>Aksi Cepat</th>
+                <th>Status</th>
+                <th>Aksi</th>
               </tr>
             </thead>
-            <tbody id="saldoTbody">
-              <tr><td colspan="4" style="color: var(--muted);">Belum ada data.</td></tr>
-            </tbody>
+            <tbody id="resellerTableBody"></tbody>
           </table>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
+
+    <!-- TAB PRODUK PULSA -->
+    <div id="sectionProduk" class="hidden">
+      <div class="card">
+        <h3 id="produkFormTitle">Tambah Produk Pulsa</h3>
+        <form id="produkForm">
+          <input type="hidden" id="produkId" />
+          <div class="row">
+            <div>
+              <label>Kode Produk *</label>
+              <input type="text" id="produkKode" required placeholder="S10" />
+            </div>
+            <div>
+              <label>Nama Produk *</label>
+              <input type="text" id="produkNama" required placeholder="Telkomsel 10rb" />
+            </div>
+            <div>
+              <label>Provider *</label>
+              <input type="text" id="produkProvider" required placeholder="Telkomsel" />
+            </div>
+            <div>
+              <label>Kategori</label>
+              <input type="text" id="produkKategori" value="Pulsa" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Nominal</label>
+              <input type="number" id="produkNominal" step="any" value="10000" />
+            </div>
+            <div>
+              <label>Harga Modal (Rp)</label>
+              <input type="number" id="produkModal" step="any" value="0" />
+            </div>
+            <div>
+              <label>Harga Jual (Rp)</label>
+              <input type="number" id="produkJual" step="any" value="0" />
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="produkAktif">
+                <option value="true">Aktif</option>
+                <option value="false">Nonaktif</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn-primary">Simpan Produk</button>
+            <button type="button" class="btn-secondary" onclick="resetProdukForm()">Batal</button>
+          </div>
+          <div id="produkMsg" class="msg"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Daftar Produk Pulsa</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Nama Produk</th>
+                <th>Provider</th>
+                <th>Modal</th>
+                <th>Harga Jual</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="produkTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const TOKEN_KEY = 'ppob_admin_token';
-    const API_KEY_STORAGE = 'ppob_admin_api_base';
-    const THEME_KEY = 'ppob_admin_theme';
+    // Ganti dengan URL backend Railway Anda
+    const API_BASE = '';
+    const TOKEN_KEY = 'admin_jwt_token';
+    let resellerCache = [];
+    let produkCache = [];
 
-    const loginSection = document.getElementById('loginSection');
-    const dashboardSection = document.getElementById('dashboardSection');
-    const btnLogout = document.getElementById('btnLogout');
-    const btnTheme = document.getElementById('btnTheme');
-    const alertBox = document.getElementById('alertBox');
+    const fmtRp = (n) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
+    const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
 
-    const apiBaseInput = document.getElementById('apiBase');
-    const saldoTbody = document.getElementById('saldoTbody');
-
-    function showAlert(msg, type = 'ok') {
-      alertBox.textContent = msg;
-      alertBox.className = `alert show ${type}`;
-    }
-
-    function clearAlert() {
-      alertBox.className = 'alert';
-      alertBox.textContent = '';
-    }
-
-    function formatRupiah(num) {
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0
-      }).format(Number(num || 0));
-    }
-
-    function getApiBase() {
-      return (apiBaseInput.value || localStorage.getItem(API_KEY_STORAGE) || '').trim().replace(/\/+$/, '');
-    }
-
-    function getToken() {
-      return sessionStorage.getItem(TOKEN_KEY) || '';
-    }
-
-    function setAuthenticated(isAuth) {
-      loginSection.classList.toggle('hidden', isAuth);
-      dashboardSection.classList.toggle('hidden', !isAuth);
-      btnLogout.classList.toggle('hidden', !isAuth);
-    }
-
-    // Tema Light / Dark
-    function applyTheme(theme) {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem(THEME_KEY, theme);
-      btnTheme.textContent = theme === 'dark' ? 'Mode Terang' : 'Mode Gelap';
-    }
-
-    btnTheme.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme') || 'light';
-      applyTheme(current === 'dark' ? 'light' : 'dark');
-    });
-
-    applyTheme(localStorage.getItem(THEME_KEY) || 'light');
-    apiBaseInput.value = localStorage.getItem(API_KEY_STORAGE) || window.location.origin;
-
-    async function apiFetch(path, options = {}) {
-      const base = getApiBase();
-      if (!base) throw new Error('Base URL server belum diisi.');
-
+    async function adminFetch(path, options = {}) {
       const headers = {
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken(),
         ...(options.headers || {})
       };
-
-      const token = getToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch(`${base}${path}`, { ...options, headers });
-      const data = await res.json().catch(() => ({}));
-
+      const res = await fetch(API_BASE + path, { ...options, headers });
       if (res.status === 401) {
-        sessionStorage.removeItem(TOKEN_KEY);
-        setAuthenticated(false);
-        throw new Error(data.message || 'Sesi berakhir, silakan login ulang.');
+        logout();
+        throw new Error('Sesi berakhir, silakan login ulang.');
       }
-
-      if (!res.ok || data.status === false) {
-        throw new Error(data.message || `Request gagal (${res.status})`);
-      }
-
-      return data;
+      return res.json();
     }
 
-    async function loadSaldos() {
-      const q = document.getElementById('searchUserId').value.trim();
-      const queryStr = q ? `?q=${encodeURIComponent(q)}` : '';
-      saldoTbody.innerHTML = '<tr><td colspan="4" style="color: var(--muted);">Memuat data...</td></tr>';
-
-      try {
-        const res = await apiFetch(`/admin/saldos${queryStr}`, { method: 'GET' });
-        const rows = res.data || [];
-
-        if (!rows.length) {
-          saldoTbody.innerHTML = '<tr><td colspan="4" style="color: var(--muted);">Tidak ada data saldo user.</td></tr>';
-          return;
-        }
-
-        saldoTbody.innerHTML = rows.map(row => `
-          <tr>
-            <td><strong>#${row.user_id}</strong></td>
-            <td class="saldo-val">${formatRupiah(row.saldo)}</td>
-            <td>${row.updated_at ? new Date(row.updated_at).toLocaleString('id-ID') : '-'}</td>
-            <td>
-              <div class="row-actions">
-                <button type="button" class="btn-outline btn-sm" onclick="prefillUser(${row.user_id}, ${row.saldo})">Pilih</button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
-      } catch (err) {
-        saldoTbody.innerHTML = `<tr><td colspan="4" style="color: var(--danger);">${err.message}</td></tr>`;
-      }
+    function showDashboard(username) {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('dashboardView').classList.remove('hidden');
+      document.getElementById('adminInfo').textContent = 'Login sebagai: ' + (username || 'admin');
+      loadResellers();
+      loadProduk();
     }
 
-    window.prefillUser = function(userId, currentSaldo) {
-      document.getElementById('adjUserId').value = userId;
-      document.getElementById('setUserId').value = userId;
-      document.getElementById('setAmount').value = currentSaldo;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+    function logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('loginView').classList.remove('hidden');
+    }
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      clearAlert();
-      const btn = document.getElementById('btnLogin');
-      btn.disabled = true;
+      document.getElementById('loginError').textContent = '';
+      const username = document.getElementById('loginUser').value.trim();
+      const password = document.getElementById('loginPass').value;
 
       try {
-        const base = getApiBase();
-        localStorage.setItem(API_KEY_STORAGE, base);
-
-        const username = document.getElementById('adminUser').value.trim();
-        const password = document.getElementById('adminPass').value;
-
-        const res = await fetch(`${base}/admin/login`, {
+        const res = await fetch(API_BASE + '/api/admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok || !data.status || !data.token) {
-          throw new Error(data.message || 'Login gagal.');
+        const data = await res.json();
+        if (!data.status) {
+          document.getElementById('loginError').textContent = data.message || 'Login gagal.';
+          return;
         }
-
-        sessionStorage.setItem(TOKEN_KEY, data.token);
-        document.getElementById('adminPass').value = '';
-        setAuthenticated(true);
-        showAlert('Berhasil login ke panel admin.');
-        await loadSaldos();
+        localStorage.setItem(TOKEN_KEY, data.token);
+        showDashboard(data.username);
       } catch (err) {
-        showAlert(err.message, 'err');
-      } finally {
-        btn.disabled = false;
+        document.getElementById('loginError').textContent = 'Gagal terhubung ke server.';
       }
     });
 
-    btnLogout.addEventListener('click', () => {
-      sessionStorage.removeItem(TOKEN_KEY);
-      setAuthenticated(false);
-      showAlert('Anda telah keluar.');
-    });
+    function switchTab(tab) {
+      const isReseller = tab === 'reseller';
+      document.getElementById('tabReseller').classList.toggle('active', isReseller);
+      document.getElementById('tabProduk').classList.toggle('active', !isReseller);
+      document.getElementById('sectionReseller').classList.toggle('hidden', !isReseller);
+      document.getElementById('sectionProduk').classList.toggle('hidden', isReseller);
+    }
 
-    document.getElementById('adjustForm').addEventListener('submit', async (e) => {
+    // --- RESELLER ---
+    async function loadResellers() {
+      const res = await adminFetch('/api/admin/resellers');
+      if (!res.status) return;
+      resellerCache = res.data || [];
+      const tbody = document.getElementById('resellerTableBody');
+      tbody.innerHTML = resellerCache.map(r => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.nama}</td>
+          <td>${r.no_hp || '-'}</td>
+          <td><strong>${fmtRp(r.saldo)}</strong></td>
+          <td><span class="${r.status === 'aktif' ? 'badge-ok' : 'badge-off'}">${r.status}</span></td>
+          <td class="actions">
+            <button class="btn-secondary btn-sm" onclick="editReseller(${r.id})">Edit</button>
+            <button class="btn-danger btn-sm" onclick="deleteReseller(${r.id})">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function editReseller(id) {
+      const r = resellerCache.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('resellerFormTitle').textContent = 'Edit Reseller #' + r.id;
+      document.getElementById('resellerId').value = r.id;
+      document.getElementById('resellerNama').value = r.nama || '';
+      document.getElementById('resellerHp').value = r.no_hp || '';
+      document.getElementById('resellerEmail').value = r.email || '';
+      document.getElementById('resellerSaldo').value = r.saldo ?? 0;
+      document.getElementById('resellerStatus').value = r.status || 'aktif';
+    }
+
+    function resetResellerForm() {
+      document.getElementById('resellerFormTitle').textContent = 'Tambah Reseller';
+      document.getElementById('resellerForm').reset();
+      document.getElementById('resellerId').value = '';
+      document.getElementById('resellerMsg').textContent = '';
+    }
+
+    document.getElementById('resellerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      clearAlert();
-      const btn = document.getElementById('btnAdjust');
-      btn.disabled = true;
-
-      try {
-        const userId = Number(document.getElementById('adjUserId').value);
-        const mode = document.getElementById('adjMode').value;
-        const absVal = Math.abs(Number(document.getElementById('adjAmount').value));
-        const delta = mode === 'deduct' ? -absVal : absVal;
-
-        const res = await apiFetch('/admin/saldo/adjust', {
-          method: 'POST',
-          body: JSON.stringify({ user_id: userId, amount: delta })
-        });
-
-        showAlert(`${res.message} Saldo User #${userId}: ${formatRupiah(res.data?.saldo)}`);
-        document.getElementById('adjAmount').value = '';
-        await loadSaldos();
-      } catch (err) {
-        showAlert(err.message, 'err');
-      } finally {
-        btn.disabled = false;
+      document.getElementById('resellerMsg').textContent = '';
+      const id = document.getElementById('resellerId').value;
+      const payload = {
+        ...(id ? { id: Number(id) } : {}),
+        nama: document.getElementById('resellerNama').value,
+        no_hp: document.getElementById('resellerHp').value,
+        email: document.getElementById('resellerEmail').value,
+        saldo: Number(document.getElementById('resellerSaldo').value || 0),
+        status: document.getElementById('resellerStatus').value
+      };
+      const res = await adminFetch('/api/admin/resellers', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (!res.status) {
+        document.getElementById('resellerMsg').textContent = res.message;
+        return;
       }
+      resetResellerForm();
+      loadResellers();
     });
 
-    document.getElementById('setForm').addEventListener('submit', async (e) => {
+    async function deleteReseller(id) {
+      if (!confirm('Hapus reseller #' + id + '?')) return;
+      const res = await adminFetch('/api/admin/resellers?id=' + id, { method: 'DELETE' });
+      if (res.status) loadResellers();
+    }
+
+    // --- PRODUK PULSA ---
+    async function loadProduk() {
+      const res = await adminFetch('/api/admin/produk');
+      if (!res.status) return;
+      produkCache = res.data || [];
+      const tbody = document.getElementById('produkTableBody');
+      tbody.innerHTML = produkCache.map(p => `
+        <tr>
+          <td><strong>${p.kode_produk}</strong></td>
+          <td>${p.nama_produk}</td>
+          <td>${p.provider}</td>
+          <td>${fmtRp(p.harga_modal)}</td>
+          <td><strong>${fmtRp(p.harga_jual)}</strong></td>
+          <td><span class="${p.is_aktif ? 'badge-ok' : 'badge-off'}">${p.is_aktif ? 'Aktif' : 'Nonaktif'}</span></td>
+          <td class="actions">
+            <button class="btn-secondary btn-sm" onclick="editProduk(${p.id})">Edit</button>
+            <button class="btn-danger btn-sm" onclick="deleteProduk(${p.id})">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function editProduk(id) {
+      const p = produkCache.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('produkFormTitle').textContent = 'Edit Produk #' + p.id;
+      document.getElementById('produkId').value = p.id;
+      document.getElementById('produkKode').value = p.kode_produk || '';
+      document.getElementById('produkNama').value = p.nama_produk || '';
+      document.getElementById('produkProvider').value = p.provider || '';
+      document.getElementById('produkKategori').value = p.kategori || 'Pulsa';
+      document.getElementById('produkNominal').value = p.nominal ?? 0;
+      document.getElementById('produkModal').value = p.harga_modal ?? 0;
+      document.getElementById('produkJual').value = p.harga_jual ?? 0;
+      document.getElementById('produkAktif').value = String(Boolean(p.is_aktif));
+    }
+
+    function resetProdukForm() {
+      document.getElementById('produkFormTitle').textContent = 'Tambah Produk Pulsa';
+      document.getElementById('produkForm').reset();
+      document.getElementById('produkId').value = '';
+      document.getElementById('produkMsg').textContent = '';
+    }
+
+    document.getElementById('produkForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      clearAlert();
-      const btn = document.getElementById('btnSet');
-      btn.disabled = true;
-
-      try {
-        const userId = Number(document.getElementById('setUserId').value);
-        const amount = Number(document.getElementById('setAmount').value);
-
-        const res = await apiFetch('/admin/saldo/set', {
-          method: 'POST',
-          body: JSON.stringify({ user_id: userId, amount })
-        });
-
-        showAlert(`${res.message} Saldo User #${userId}: ${formatRupiah(res.data?.saldo)}`);
-        await loadSaldos();
-      } catch (err) {
-        showAlert(err.message, 'err');
-      } finally {
-        btn.disabled = false;
+      document.getElementById('produkMsg').textContent = '';
+      const id = document.getElementById('produkId').value;
+      const payload = {
+        ...(id ? { id: Number(id) } : {}),
+        kode_produk: document.getElementById('produkKode').value,
+        nama_produk: document.getElementById('produkNama').value,
+        provider: document.getElementById('produkProvider').value,
+        kategori: document.getElementById('produkKategori').value,
+        nominal: Number(document.getElementById('produkNominal').value || 0),
+        harga_modal: Number(document.getElementById('produkModal').value || 0),
+        harga_jual: Number(document.getElementById('produkJual').value || 0),
+        is_aktif: document.getElementById('produkAktif').value === 'true'
+      };
+      const res = await adminFetch('/api/admin/produk', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (!res.status) {
+        document.getElementById('produkMsg').textContent = res.message;
+        return;
       }
+      resetProdukForm();
+      loadProduk();
     });
 
-    document.getElementById('btnRefresh').addEventListener('click', loadSaldos);
-    document.getElementById('searchUserId').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') loadSaldos();
-    });
+    async function deleteProduk(id) {
+      if (!confirm('Hapus produk #' + id + '?')) return;
+      const res = await adminFetch('/api/admin/produk?id=' + id, { method: 'DELETE' });
+      if (res.status) loadProduk();
+    }
 
+    // Auto-login jika token masih ada di browser
     if (getToken()) {
-      setAuthenticated(true);
-      loadSaldos();
+      showDashboard('admin');
     }
   </script>
 </body>
