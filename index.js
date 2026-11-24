@@ -388,22 +388,28 @@ const server = http.createServer(async (req, res) => {
             }
 
             // --- RESELLER (USERS) ---
+            // --- RESELLER (USERS) ---
             if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/resellers') {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('id, nama, email, no_hp, saldo, status, created_at')
+                    .select('id, auth_user_id, nama, email, no_hp, saldo, status, created_at')
                     .order('id', { ascending: false });
                 if (error) return kirimJSON(res, 500, { status: false, message: error.message });
                 return kirimJSON(res, 200, { status: true, data: data || [] });
             }
 
             if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/resellers') {
-                const { nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
+                const { auth_user_id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
                 if (!nama) return kirimJSON(res, 400, { status: false, message: 'Nama reseller wajib diisi.' });
+
+                const authUserIdClean = auth_user_id && String(auth_user_id).trim() !== ''
+                    ? String(auth_user_id).trim()
+                    : null;
 
                 const { data, error } = await supabase
                     .from('users')
                     .insert([{
+                        auth_user_id: authUserIdClean,
                         nama: String(nama).trim(),
                         email: email ? String(email).trim() : null,
                         no_hp: no_hp ? String(no_hp).trim() : null,
@@ -418,12 +424,17 @@ const server = http.createServer(async (req, res) => {
             }
 
             if (req.method === 'PUT' && parsedUrl.pathname === '/api/admin/resellers') {
-                const { id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
+                const { id, auth_user_id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
                 if (!id) return kirimJSON(res, 400, { status: false, message: 'ID reseller wajib diisi.' });
+
+                const authUserIdClean = auth_user_id && String(auth_user_id).trim() !== ''
+                    ? String(auth_user_id).trim()
+                    : null;
 
                 const { data, error } = await supabase
                     .from('users')
                     .update({
+                        auth_user_id: authUserIdClean,
                         nama: String(nama).trim(),
                         email: email ? String(email).trim() : null,
                         no_hp: no_hp ? String(no_hp).trim() : null,
@@ -438,7 +449,7 @@ const server = http.createServer(async (req, res) => {
                 if (error) return kirimJSON(res, 400, { status: false, message: error.message });
                 return kirimJSON(res, 200, { status: true, data });
             }
-
+            
             if (req.method === 'DELETE' && parsedUrl.pathname === '/api/admin/resellers') {
                 const id = parsedUrl.searchParams.get('id');
                 if (!id) return kirimJSON(res, 400, { status: false, message: 'Parameter id wajib ada.' });
