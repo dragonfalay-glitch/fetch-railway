@@ -183,7 +183,35 @@ const server = http.createServer(async (req, res) => {
 
                     if (!resellerRow || String(resellerRow.user_id) !== userIdClean || (resellerRow.status && resellerRow.status !== 'aktif')) {
                         res.writeHead(403, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end('anda bukan reseller pulsa');
+                        res.end('Anda bukan reseller pulsa');
+                        return;
+                    }
+
+                    // Cek apakah produk dari frontend ada di produk_pulsa dan is_active === true
+                    const kodeProdukClean = String(product || '').trim().toUpperCase();
+                    if (!kodeProdukClean) {
+                        res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end('Kode produk tidak valid atau tidak aktif.');
+                        return;
+                    }
+
+                    const { data: produkValid, error: produkValidError } = await supabase
+                        .from('produk_pulsa')
+                        .select('id, kode_produk, harga_jual, is_active')
+                        .eq('kode_produk', kodeProdukClean)
+                        .eq('is_active', true)
+                        .maybeSingle();
+
+                    if (produkValidError) {
+                        console.error("Supabase Cek Produk Error:", produkValidError.message);
+                        res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end('Gagal memvalidasi produk pulsa.');
+                        return;
+                    }
+
+                    if (!produkValid || String(produkValid.kode_produk).toUpperCase() !== kodeProdukClean || produkValid.is_active !== true) {
+                        res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end(`Produk ${kodeProdukClean} tidak tersedia atau tidak aktif.`);
                         return;
                     }
 
