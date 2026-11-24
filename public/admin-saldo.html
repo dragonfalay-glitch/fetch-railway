@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Admin - Reseller & Produk Pulsa</title>
+  <title>Dashboard Admin - Reseller, Produk Pulsa & Log Transaksi</title>
   <style>
     :root {
       --bg: #f4f6f9;
@@ -13,36 +13,77 @@
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
       --danger: #dc2626;
-      --success: #16a34a;
       --border: #e5e7eb;
+      --input-bg: #ffffff;
+      --th-bg: #f9fafb;
+      --btn-sec-bg: #e5e7eb;
+      --btn-sec-text: #111827;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --badge-ok-bg: #dcfce7;
+      --badge-ok-text: #166534;
+      --badge-off-bg: #fee2e2;
+      --badge-off-text: #991b1b;
     }
+
+    html.dark-theme {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --border: #334155;
+      --input-bg: #0f172a;
+      --th-bg: #162033;
+      --btn-sec-bg: #334155;
+      --btn-sec-text: #f8fafc;
+      --shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      --badge-ok-bg: rgba(22, 163, 74, 0.2);
+      --badge-ok-text: #86efac;
+      --badge-off-bg: rgba(220, 38, 38, 0.2);
+      --badge-off-text: #fca5a5;
+    }
+
     * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body { margin: 0; background: var(--bg); color: var(--text); }
-    .container { max-width: 1120px; margin: 24px auto; padding: 0 16px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    body { margin: 0; background: var(--bg); color: var(--text); transition: background-color 0.2s, color 0.2s; }
+    .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
     .login-box { max-width: 380px; margin: 80px auto; }
+    .login-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .login-header h2 { margin: 0; }
     h1, h2, h3 { margin-top: 0; }
     .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
     label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-    input, select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    input, select {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+    }
     button { padding: 9px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-hover); }
-    .btn-secondary { background: #e5e7eb; color: #111827; }
+    .btn-secondary { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
     .topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-    .tab-btn { background: #e5e7eb; color: #374151; }
+    .topbar-right { display: flex; gap: 8px; align-items: center; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tab-btn { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
     .tab-btn.active { background: var(--primary); color: #fff; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; }
-    th { background: #f9fafb; color: var(--muted); font-size: 12px; text-transform: uppercase; }
-    .badge-ok { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
-    .badge-off { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; vertical-align: top; }
+    th { background: var(--th-bg); color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    .badge-ok { background: var(--badge-ok-bg); color: var(--badge-ok-text); padding: 2px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
+    .badge-off { background: var(--badge-off-bg); color: var(--badge-off-text); padding: 2px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
     .msg { font-size: 13px; margin-top: 8px; color: var(--danger); }
     .hidden { display: none; }
     .actions { display: flex; gap: 6px; }
+    .pre-wrap { white-space: pre-line; font-size: 12px; line-height: 1.4; max-width: 280px; }
   </style>
 </head>
 <body>
@@ -50,7 +91,10 @@
   <!-- HALAMAN LOGIN ADMIN -->
   <div id="loginView" class="container">
     <div class="card login-box">
-      <h2>Login Admin</h2>
+      <div class="login-header">
+        <h2>Login Admin</h2>
+        <button type="button" class="btn-secondary btn-sm" onclick="toggleTheme()" id="themeBtnLogin">Dark Mode</button>
+      </div>
       <form id="loginForm">
         <div style="margin-bottom:12px;">
           <label>Username</label>
@@ -73,12 +117,16 @@
         <h2 style="margin-bottom:2px;">Dashboard Admin</h2>
         <small id="adminInfo" style="color:var(--muted);"></small>
       </div>
-      <button class="btn-secondary" onclick="logout()">Logout</button>
+      <div class="topbar-right">
+        <button type="button" class="btn-secondary" onclick="toggleTheme()" id="themeBtnDash">Dark Mode</button>
+        <button type="button" class="btn-secondary" onclick="logout()">Logout</button>
+      </div>
     </div>
 
     <div class="tabs">
       <button id="tabReseller" class="tab-btn active" onclick="switchTab('reseller')">Manajemen Reseller</button>
       <button id="tabProduk" class="tab-btn" onclick="switchTab('produk')">Manajemen Produk Pulsa</button>
+      <button id="tabLog" class="tab-btn" onclick="switchTab('log')">Log Transaksi</button>
     </div>
 
     <!-- TAB RESELLER -->
@@ -213,16 +261,91 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB LOG TRANSAKSI -->
+    <div id="sectionLog" class="hidden">
+      <div class="card">
+        <h3>Filter Log Transaksi</h3>
+        <div class="row" style="align-items:end;">
+          <div>
+            <label>Kode Transaksi (RefID)</label>
+            <input type="text" id="filterKode" placeholder="TRX..." />
+          </div>
+          <div>
+            <label>User ID Reseller</label>
+            <input type="text" id="filterUserId" placeholder="Contoh: 1" />
+          </div>
+          <div>
+            <label>Jumlah Data</label>
+            <select id="filterLimit">
+              <option value="25">25 terakhir</option>
+              <option value="50" selected>50 terakhir</option>
+              <option value="100">100 terakhir</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn-primary" onclick="loadLogTransaksi()">Cari / Refresh</button>
+            <button type="button" class="btn-secondary" onclick="resetFilterLog()">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Riwayat / Log Transaksi</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Kode TRX</th>
+                <th>Reseller</th>
+                <th>Tujuan</th>
+                <th>Pesan Reseller</th>
+                <th>Respon OtoMax</th>
+                <th>Mutasi Saldo</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    // Ganti dengan URL backend Railway Anda
     const API_BASE = '';
     const TOKEN_KEY = 'admin_jwt_token';
+    const THEME_KEY = 'admin_dark_theme';
     let resellerCache = [];
     let produkCache = [];
 
-    const fmtRp = (n) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
+    function applyTheme(isDark) {
+      document.documentElement.classList.toggle('dark-theme', isDark);
+      const label = isDark ? 'Light Mode' : 'Dark Mode';
+      const btnLogin = document.getElementById('themeBtnLogin');
+      const btnDash = document.getElementById('themeBtnDash');
+      if (btnLogin) btnLogin.textContent = label;
+      if (btnDash) btnDash.textContent = label;
+    }
+
+    function toggleTheme() {
+      const isDark = !document.documentElement.classList.contains('dark-theme');
+      localStorage.setItem(THEME_KEY, isDark ? '1' : '0');
+      applyTheme(isDark);
+    }
+
+    applyTheme(localStorage.getItem(THEME_KEY) === '1');
+
+    const fmtRp = (n) => (n === null || n === undefined || Number.isNaN(Number(n)))
+      ? '-'
+      : 'Rp' + Number(n).toLocaleString('id-ID');
+
+    const fmtWaktu = (iso) => {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('id-ID');
+    };
+
     const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
 
     async function adminFetch(path, options = {}) {
@@ -245,6 +368,7 @@
       document.getElementById('adminInfo').textContent = 'Login sebagai: ' + (username || 'admin');
       loadResellers();
       loadProduk();
+      loadLogTransaksi();
     }
 
     function logout() {
@@ -278,11 +402,15 @@
     });
 
     function switchTab(tab) {
-      const isReseller = tab === 'reseller';
-      document.getElementById('tabReseller').classList.toggle('active', isReseller);
-      document.getElementById('tabProduk').classList.toggle('active', !isReseller);
-      document.getElementById('sectionReseller').classList.toggle('hidden', !isReseller);
-      document.getElementById('sectionProduk').classList.toggle('hidden', isReseller);
+      document.getElementById('tabReseller').classList.toggle('active', tab === 'reseller');
+      document.getElementById('tabProduk').classList.toggle('active', tab === 'produk');
+      document.getElementById('tabLog').classList.toggle('active', tab === 'log');
+
+      document.getElementById('sectionReseller').classList.toggle('hidden', tab !== 'reseller');
+      document.getElementById('sectionProduk').classList.toggle('hidden', tab !== 'produk');
+      document.getElementById('sectionLog').classList.toggle('hidden', tab !== 'log');
+
+      if (tab === 'log') loadLogTransaksi();
     }
 
     // --- RESELLER ---
@@ -432,7 +560,48 @@
       if (res.status) loadProduk();
     }
 
-    // Auto-login jika token masih ada di browser
+    // --- LOG TRANSAKSI ---
+    function resetFilterLog() {
+      document.getElementById('filterKode').value = '';
+      document.getElementById('filterUserId').value = '';
+      document.getElementById('filterLimit').value = '50';
+      loadLogTransaksi();
+    }
+
+    async function loadLogTransaksi() {
+      const kode = encodeURIComponent(document.getElementById('filterKode').value.trim());
+      const userId = encodeURIComponent(document.getElementById('filterUserId').value.trim());
+      const limit = encodeURIComponent(document.getElementById('filterLimit').value || '50');
+
+      const res = await adminFetch(`/api/admin/transaksi?kode=${kode}&user_id=${userId}&limit=${limit}`);
+      if (!res.status) return;
+
+      const list = res.data || [];
+      const tbody = document.getElementById('logTableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Belum ada data transaksi.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(item => `
+        <tr>
+          <td>${fmtWaktu(item.tgl_entri)}</td>
+          <td><strong>${item.kode_transaksi || '-'}</strong></td>
+          <td>${item.nama_reseller || '-'} <small style="color:var(--muted);">(#${item.user_id ?? '-'})</small></td>
+          <td>${item.tujuan || '-'}</td>
+          <td><div class="pre-wrap">${item.pesan_sukses_ke_reseller || '-'}</div></td>
+          <td><div class="pre-wrap" style="color:var(--muted);">${item.pesan || '-'}</div></td>
+          <td>
+            <div class="pre-wrap">
+              Awal: ${fmtRp(item.saldo_sebelumnya)}<br/>
+              Potong: ${fmtRp(item.nominal_potong)}<br/>
+              <strong>Akhir: ${fmtRp(item.saldo_terbaru)}</strong>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
     if (getToken()) {
       showDashboard('admin');
     }
