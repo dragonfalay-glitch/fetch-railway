@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 // Admin sesi (pastikan ADMIN_USER, ADMIN_PASS, dan ADMIN_SECRET terisi di Railway)
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASS = process.env.ADMIN_PASS || '';
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'fallback-secret-ganti-di-railway';
+const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
 
 function buatAdminToken(username) {
     const payload = Buffer.from(JSON.stringify({
