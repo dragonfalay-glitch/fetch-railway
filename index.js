@@ -177,13 +177,13 @@ const server = http.createServer(async (req, res) => {
                     if (resellerError) {
                         console.error("Supabase Cek Reseller Error:", resellerError.message);
                         res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end('Gagal memvalidasi data reseller.');
+                        res.end('Gagal, memvalidasi data reseller tidak valid.');
                         return;
                     }
 
                     if (!resellerRow || String(resellerRow.user_id) !== userIdClean || (resellerRow.status && resellerRow.status !== 'aktif')) {
                         res.writeHead(403, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end('Anda bukan reseller pulsa');
+                        res.end('Gagal, Anda bukan reseller pulsa');
                         return;
                     }
 
@@ -191,7 +191,7 @@ const server = http.createServer(async (req, res) => {
                     const kodeProdukClean = String(product || '').trim().toUpperCase();
                     if (!kodeProdukClean) {
                         res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end('Kode produk tidak valid atau tidak aktif.');
+                        res.end('Gagal, Kode produk tidak valid atau tidak aktif.');
                         return;
                     }
 
@@ -205,7 +205,7 @@ const server = http.createServer(async (req, res) => {
                     if (produkValidError) {
                         console.error("Supabase Cek Produk Error:", produkValidError.message);
                         res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end('Gagal memvalidasi produk pulsa.');
+                        res.end('Gagal, Produk pulsa kosong.');
                         return;
                     }
 
