@@ -216,7 +216,7 @@ const server = http.createServer(async (req, res) => {
                         return;
                     }
 
-                    // Cek apakah produk dari frontend ada di produk_pulsa (baca huruf kecil & besar) dan is_active === true
+                    // Cek apakah produk dari frontend ada di produk_pulsa (baca huruf kecil & besar) dan is_aktif === true
                     const kodeProdukClean = String(product || '').trim().toUpperCase();
                     if (!kodeProdukClean) {
                         res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
@@ -226,7 +226,7 @@ const server = http.createServer(async (req, res) => {
 
                     const { data: produkRows, error: produkValidError } = await supabase
                         .from('produk_pulsa')
-                        .select('id, kode_produk, harga_jual, is_active')
+                        .select('id, kode_produk, harga_jual, is_aktif')
                         .ilike('kode_produk', kodeProdukClean)
                         .eq('is_aktif', true)
                         .limit(1);
@@ -240,7 +240,7 @@ const server = http.createServer(async (req, res) => {
 
                     const produkValid = Array.isArray(produkRows) ? produkRows[0] : null;
                     const kodeDbUpper = String(produkValid?.kode_produk || '').trim().toUpperCase();
-                    if (!produkValid || kodeDbUpper !== kodeProdukClean || produkValid.is_active !== true) {
+                    if (!produkValid || kodeDbUpper !== kodeProdukClean || produkValid.is_aktif !== true) {
                         res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
                         res.end(`Gagal, Kode produk ${kodeProdukClean} tidak valid atau tidak aktif.`);
                         return;
