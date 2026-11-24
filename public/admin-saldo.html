@@ -1,1286 +1,665 @@
 <!DOCTYPE html>
-
 <html lang="id">
-
 <head>
-
-<meta charset="UTF-8" />
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<title>Dashboard Admin - Reseller, Produk Pulsa & Log Transaksi</title>
-
-<style>
-
-:root {
-
---bg: #f4f6f9;
-
---card: #ffffff;
-
---text: #1f2937;
-
---muted: #6b7280;
-
---primary: #2563eb;
-
---primary-hover: #1d4ed8;
-
---danger: #dc2626;
-
---border: #e5e7eb;
-
---input-bg: #ffffff;
-
---th-bg: #f9fafb;
-
---btn-sec-bg: #e5e7eb;
-
---btn-sec-text: #111827;
-
---shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
---badge-ok-bg: #dcfce7;
-
---badge-ok-text: #166534;
-
---badge-off-bg: #fee2e2;
-
---badge-off-text: #991b1b;
-
-}
-
-
-
-html.dark-theme {
-
---bg: #0f172a;
-
---card: #1e293b;
-
---text: #f1f5f9;
-
---muted: #94a3b8;
-
---primary: #3b82f6;
-
---primary-hover: #2563eb;
-
---danger: #ef4444;
-
---border: #334155;
-
---input-bg: #0f172a;
-
---th-bg: #162033;
-
---btn-sec-bg: #334155;
-
---btn-sec-text: #f8fafc;
-
---shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-
---badge-ok-bg: rgba(22, 163, 74, 0.2);
-
---badge-ok-text: #86efac;
-
---badge-off-bg: rgba(220, 38, 38, 0.2);
-
---badge-off-text: #fca5a5;
-
-}
-
-
-
-{ box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-body { margin: 0; background: var(--bg); color: var(--text); transition: background-color 0.2s, color 0.2s; }
-
-.container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
-
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
-
-.login-box { max-width: 380px; margin: 80px auto; }
-
-.login-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-
-.login-header h2 { margin: 0; }
-
-h1, h2, h3 { margin-top: 0; }
-
-.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
-
-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-
-input, select {
-
-width: 100%;
-
-padding: 9px 10px;
-
-border: 1px solid var(--border);
-
-border-radius: 6px;
-
-font-size: 14px;
-
-background: var(--input-bg);
-
-color: var(--text);
-
-}
-
-button { padding: 9px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
-
-.btn-primary { background: var(--primary); color: #fff; }
-
-.btn-primary:hover { background: var(--primary-hover); }
-
-.btn-secondary { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
-
-.btn-danger { background: var(--danger); color: #fff; }
-
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-
-.topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-
-.topbar-right { display: flex; gap: 8px; align-items: center; }
-
-.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-
-.tab-btn { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
-
-.tab-btn.active { background: var(--primary); color: #fff; }
-
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-
-th, td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; vertical-align: top; }
-
-th { background: var(--th-bg); color: var(--muted); font-size: 12px; text-transform: uppercase; }
-
-.badge-ok { background: var(--badge-ok-bg); color: var(--badge-ok-text); padding: 2px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
-
-.badge-off { background: var(--badge-off-bg); color: var(--badge-off-text); padding: 2px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
-
-.msg { font-size: 13px; margin-top: 8px; color: var(--danger); }
-
-.hidden { display: none; }
-
-.actions { display: flex; gap: 6px; }
-
-.pre-wrap { white-space: pre-line; font-size: 12px; line-height: 1.4; max-width: 280px; }
-
-.pagination-bar {
-
-display: flex;
-
-justify-content: space-between;
-
-align-items: center;
-
-flex-wrap: wrap;
-
-gap: 10px;
-
-margin-top: 14px;
-
-font-size: 13px;
-
-color: var(--muted);
-
-}
-
-.pagination-actions {
-
-display: flex;
-
-gap: 8px;
-
-align-items: center;
-
-}
-
-button:disabled {
-
-opacity: 0.45;
-
-cursor: not-allowed;
-
-}
-
-</style>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Admin - Reseller, Produk Pulsa & Log Transaksi</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #dc2626;
+      --border: #e5e7eb;
+      --input-bg: #ffffff;
+      --th-bg: #f9fafb;
+      --btn-sec-bg: #e5e7eb;
+      --btn-sec-text: #111827;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --badge-ok-bg: #dcfce7;
+      --badge-ok-text: #166534;
+      --badge-off-bg: #fee2e2;
+      --badge-off-text: #991b1b;
+    }
+
+    html.dark-theme {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --border: #334155;
+      --input-bg: #0f172a;
+      --th-bg: #162033;
+      --btn-sec-bg: #334155;
+      --btn-sec-text: #f8fafc;
+      --shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      --badge-ok-bg: rgba(22, 163, 74, 0.2);
+      --badge-ok-text: #86efac;
+      --badge-off-bg: rgba(220, 38, 38, 0.2);
+      --badge-off-text: #fca5a5;
+    }
+
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); transition: background-color 0.2s, color 0.2s; }
+    .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
+    .login-box { max-width: 380px; margin: 80px auto; }
+    .login-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .login-header h2 { margin: 0; }
+    h1, h2, h3 { margin-top: 0; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+    }
+    button { padding: 9px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .topbar-right { display: flex; gap: 8px; align-items: center; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tab-btn { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; vertical-align: top; }
+    th { background: var(--th-bg); color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    .badge-ok { background: var(--badge-ok-bg); color: var(--badge-ok-text); padding: 2px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
+    .badge-off { background: var(--badge-off-bg); color: var(--badge-off-text); padding: 2px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
+    .msg { font-size: 13px; margin-top: 8px; color: var(--danger); }
+    .hidden { display: none; }
+    .actions { display: flex; gap: 6px; }
+    .pre-wrap { white-space: pre-line; font-size: 12px; line-height: 1.4; max-width: 280px; }
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .pagination-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
-
 <body>
 
-
-
-<!-- HALAMAN LOGIN ADMIN -->
-
-<div id="loginView" class="container">
-
-<div class="card login-box">
-
-<div class="login-header">
-
-<h2>Login Admin</h2>
-
-<button type="button" class="btn-secondary btn-sm" onclick="toggleTheme()" id="themeBtnLogin">Dark Mode</button>
-
-</div>
-
-<form id="loginForm">
-
-<div style="margin-bottom:12px;">
-
-<label>Username</label>
-
-<input type="text" id="loginUser" required placeholder="admin" />
-
-</div>
-
-<div style="margin-bottom:14px;">
-
-<label>Password</label>
-
-<input type="password" id="loginPass" required placeholder="••••••••" />
-
-</div>
-
-<button type="submit" class="btn-primary" style="width:100%;">Masuk</button>
-
-<div id="loginError" class="msg"></div>
-
-</form>
-
-</div>
-
-</div>
-
-
-
-<!-- HALAMAN DASHBOARD ADMIN -->
-
-<div id="dashboardView" class="container hidden">
-
-<div class="topbar">
-
-<div>
-
-<h2 style="margin-bottom:2px;">Dashboard Admin</h2>
-
-<small id="adminInfo" style="color:var(--muted);"></small>
-
-</div>
-
-<div class="topbar-right">
-
-<button type="button" class="btn-secondary" onclick="toggleTheme()" id="themeBtnDash">Dark Mode</button>
-
-<button type="button" class="btn-secondary" onclick="logout()">Logout</button>
-
-</div>
-
-</div>
-
-
-
-<div class="tabs">
-
-<button id="tabReseller" class="tab-btn active" onclick="switchTab('reseller')">Manajemen Reseller</button>
-
-<button id="tabProduk" class="tab-btn" onclick="switchTab('produk')">Manajemen Produk Pulsa</button>
-
-<button id="tabLog" class="tab-btn" onclick="switchTab('log')">Log Transaksi</button>
-
-</div>
-
-
-
-<!-- TAB RESELLER -->
-
-<!-- TAB RESELLER -->
-
-<div id="sectionReseller">
-
-<div class="card">
-
-<h3 id="resellerFormTitle">Tambah Reseller</h3>
-
-<form id="resellerForm">
-
-<input type="hidden" id="resellerId" />
-
-<div class="row">
-
-<div>
-
-<label>Nama Reseller *</label>
-
-<input type="text" id="resellerNama" required />
-
-</div>
-
-<div>
-
-<label>Auth User ID (UUID)</label>
-
-<input type="text" id="resellerAuthUserId" placeholder="Opsional: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-
-</div>
-
-<div>
-
-<label>No. HP</label>
-
-<input type="text" id="resellerHp" />
-
-</div>
-
-<div>
-
-<label>Email</label>
-
-<input type="email" id="resellerEmail" />
-
-</div>
-
-<div>
-
-<label>Saldo (Rp)</label>
-
-<input type="number" id="resellerSaldo" step="any" value="0" />
-
-</div>
-
-<div>
-
-<label>Status</label>
-
-<select id="resellerStatus">
-
-<option value="aktif">aktif</option>
-
-<option value="nonaktif">nonaktif</option>
-
-</select>
-
-</div>
-
-</div>
-
-<div class="actions">
-
-<button type="submit" class="btn-primary">Simpan Reseller</button>
-
-<button type="button" class="btn-secondary" onclick="resetResellerForm()">Batal</button>
-
-</div>
-
-<div id="resellerMsg" class="msg"></div>
-
-</form>
-
-</div>
-
-
-
-<div class="card">
-
-<h3>Daftar Reseller</h3>
-
-<div style="overflow-x:auto;">
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>ID</th>
-
-<th>Nama</th>
-
-<th>Auth User ID</th>
-
-<th>No. HP</th>
-
-<th>Saldo</th>
-
-<th>Status</th>
-
-<th>Aksi</th>
-
-</tr>
-
-</thead>
-
-<tbody id="resellerTableBody"></tbody>
-
-</table>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<!-- TAB PRODUK PULSA -->
-
-<div id="sectionProduk" class="hidden">
-
-<div class="card">
-
-<h3 id="produkFormTitle">Tambah Produk Pulsa</h3>
-
-<form id="produkForm">
-
-<input type="hidden" id="produkId" />
-
-<div class="row">
-
-<div>
-
-<label>Kode Produk *</label>
-
-<input type="text" id="produkKode" required placeholder="S10" />
-
-</div>
-
-<div>
-
-<label>Nama Produk *</label>
-
-<input type="text" id="produkNama" required placeholder="Telkomsel 10rb" />
-
-</div>
-
-<div>
-
-<label>Provider *</label>
-
-<input type="text" id="produkProvider" required placeholder="Telkomsel" />
-
-</div>
-
-<div>
-
-<label>Kategori</label>
-
-<input type="text" id="produkKategori" value="Pulsa" />
-
-</div>
-
-</div>
-
-<div class="row">
-
-<div>
-
-<label>Nominal</label>
-
-<input type="number" id="produkNominal" step="any" value="10000" />
-
-</div>
-
-<div>
-
-<label>Harga Modal (Rp)</label>
-
-<input type="number" id="produkModal" step="any" value="0" />
-
-</div>
-
-<div>
-
-<label>Harga Jual (Rp)</label>
-
-<input type="number" id="produkJual" step="any" value="0" />
-
-</div>
-
-<div>
-
-<label>Status</label>
-
-<select id="produkAktif">
-
-<option value="true">Aktif</option>
-
-<option value="false">Nonaktif</option>
-
-</select>
-
-</div>
-
-</div>
-
-<div class="actions">
-
-<button type="submit" class="btn-primary">Simpan Produk</button>
-
-<button type="button" class="btn-secondary" onclick="resetProdukForm()">Batal</button>
-
-</div>
-
-<div id="produkMsg" class="msg"></div>
-
-</form>
-
-</div>
-
-
-
-<div class="card">
-
-<h3>Daftar Produk Pulsa</h3>
-
-<div style="overflow-x:auto;">
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Kode</th>
-
-<th>Nama Produk</th>
-
-<th>Provider</th>
-
-<th>Modal</th>
-
-<th>Harga Jual</th>
-
-<th>Status</th>
-
-<th>Aksi</th>
-
-</tr>
-
-</thead>
-
-<tbody id="produkTableBody"></tbody>
-
-</table>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<!-- TAB LOG TRANSAKSI -->
-
-<!-- TAB LOG TRANSAKSI -->
-
-<div id="sectionLog" class="hidden">
-
-<div class="card">
-
-<h3>Filter Log Transaksi</h3>
-
-<div class="row" style="align-items:end;">
-
-<div>
-
-<label>Kode Transaksi (RefID)</label>
-
-<input type="text" id="filterKode" placeholder="TRX..." />
-
-</div>
-
-<div>
-
-<label>User ID Reseller</label>
-
-<input type="text" id="filterUserId" placeholder="Contoh: 1" />
-
-</div>
-
-<div>
-
-<label>Data per Halaman</label>
-
-<select id="filterLimit" onchange="loadLogTransaksi(1)">
-
-<option value="10">10 / halaman</option>
-
-<option value="25" selected>25 / halaman</option>
-
-<option value="50">50 / halaman</option>
-
-<option value="100">100 / halaman</option>
-
-</select>
-
-</div>
-
-<div class="actions">
-
-<button type="button" class="btn-primary" onclick="loadLogTransaksi(1)">Cari / Refresh</button>
-
-<button type="button" class="btn-secondary" onclick="resetFilterLog()">Reset</button>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<div class="card">
-
-<h3>Riwayat / Log Transaksi</h3>
-
-<div style="overflow-x:auto;">
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Waktu</th>
-
-<th>Kode TRX</th>
-
-<th>Reseller</th>
-
-<th>Tujuan</th>
-
-<th>Pesan Reseller</th>
-
-<th>Respon OtoMax</th>
-
-<th>Mutasi Saldo</th>
-
-</tr>
-
-</thead>
-
-<tbody id="logTableBody"></tbody>
-
-</table>
-
-</div>
-
-
-
-<div class="pagination-bar">
-
-<div id="logPageInfo">Halaman 1 dari 1 (0 data)</div>
-
-<div class="pagination-actions">
-
-<button type="button" id="btnPrevLog" class="btn-secondary btn-sm" onclick="gantiHalamanLog(-1)">Sebelumnya</button>
-
-<button type="button" id="btnNextLog" class="btn-secondary btn-sm" onclick="gantiHalamanLog(1)">Berikutnya</button>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<script>
-
-const API_BASE = '';
-
-const TOKEN_KEY = 'admin_jwt_token';
-
-const THEME_KEY = 'admin_dark_theme';
-
-let resellerCache = [];
-
-let produkCache = [];
-
-
-
-function applyTheme(isDark) {
-
-document.documentElement.classList.toggle('dark-theme', isDark);
-
-const label = isDark ? 'Light Mode' : 'Dark Mode';
-
-const btnLogin = document.getElementById('themeBtnLogin');
-
-const btnDash = document.getElementById('themeBtnDash');
-
-if (btnLogin) btnLogin.textContent = label;
-
-if (btnDash) btnDash.textContent = label;
-
-}
-
-
-
-function toggleTheme() {
-
-const isDark = !document.documentElement.classList.contains('dark-theme');
-
-localStorage.setItem(THEME_KEY, isDark ? '1' : '0');
-
-applyTheme(isDark);
-
-}
-
-
-
-applyTheme(localStorage.getItem(THEME_KEY) === '1');
-
-
-
-const fmtRp = (n) => (n === null || n === undefined || Number.isNaN(Number(n)))
-
-? '-'
-
-: 'Rp' + Number(n).toLocaleString('id-ID');
-
-
-
-const fmtWaktu = (iso) => {
-
-if (!iso) return '-';
-
-const d = new Date(iso);
-
-return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('id-ID');
-
-};
-
-
-
-const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
-
-
-
-async function adminFetch(path, options = {}) {
-
-const headers = {
-
-'Content-Type': 'application/json',
-
-'Authorization': 'Bearer ' + getToken(),
-
-...(options.headers || {})
-
-};
-
-const res = await fetch(API_BASE + path, { ...options, headers });
-
-if (res.status === 401) {
-
-logout();
-
-throw new Error('Sesi berakhir, silakan login ulang.');
-
-}
-
-return res.json();
-
-}
-
-
-
-function showDashboard(username) {
-
-document.getElementById('loginView').classList.add('hidden');
-
-document.getElementById('dashboardView').classList.remove('hidden');
-
-document.getElementById('adminInfo').textContent = 'Login sebagai: ' + (username || 'admin');
-
-loadResellers();
-
-loadProduk();
-
-loadLogTransaksi();
-
-}
-
-
-
-function logout() {
-
-localStorage.removeItem(TOKEN_KEY);
-
-document.getElementById('dashboardView').classList.add('hidden');
-
-document.getElementById('loginView').classList.remove('hidden');
-
-}
-
-
-
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-
-e.preventDefault();
-
-document.getElementById('loginError').textContent = '';
-
-const username = document.getElementById('loginUser').value.trim();
-
-const password = document.getElementById('loginPass').value;
-
-
-
-try {
-
-const res = await fetch(API_BASE + '/api/admin/login', {
-
-method: 'POST',
-
-headers: { 'Content-Type': 'application/json' },
-
-body: JSON.stringify({ username, password })
-
-});
-
-const data = await res.json();
-
-if (!data.status) {
-
-document.getElementById('loginError').textContent = data.message || 'Login gagal.';
-
-return;
-
-}
-
-localStorage.setItem(TOKEN_KEY, data.token);
-
-showDashboard(data.username);
-
-} catch (err) {
-
-document.getElementById('loginError').textContent = 'Gagal terhubung ke server.';
-
-}
-
-});
-
-
-
-function switchTab(tab) {
-
-document.getElementById('tabReseller').classList.toggle('active', tab === 'reseller');
-
-document.getElementById('tabProduk').classList.toggle('active', tab === 'produk');
-
-document.getElementById('tabLog').classList.toggle('active', tab === 'log');
-
-
-
-document.getElementById('sectionReseller').classList.toggle('hidden', tab !== 'reseller');
-
-document.getElementById('sectionProduk').classList.toggle('hidden', tab !== 'produk');
-
-document.getElementById('sectionLog').classList.toggle('hidden', tab !== 'log');
-
-
-
-if (tab === 'log') loadLogTransaksi();
-
-}
-
-
-
-// --- RESELLER ---
-
-async function loadResellers() {
-
-const res = await adminFetch('/api/admin/resellers');
-
-if (!res.status) return;
-
-resellerCache = res.data || [];
-
-const tbody = document.getElementById('resellerTableBody');
-
-tbody.innerHTML = resellerCache.map(r => `
-
-<tr>
-
-<td>${r.id}</td>
-
-<td>${r.nama}</td>
-
-<td>${r.no_hp || '-'}</td>
-
-<td><strong>${fmtRp(r.saldo)}</strong></td>
-
-<td><span class="${r.status === 'aktif' ? 'badge-ok' : 'badge-off'}">${r.status}</span></td>
-
-<td class="actions">
-
-<button class="btn-secondary btn-sm" onclick="editReseller(${r.id})">Edit</button>
-
-<button class="btn-danger btn-sm" onclick="deleteReseller(${r.id})">Hapus</button>
-
-</td>
-
-</tr>
-
-`).join('');
-
-}
-
-
-
-function editReseller(id) {
-
-const r = resellerCache.find(x => x.id === id);
-
-if (!r) return;
-
-document.getElementById('resellerFormTitle').textContent = 'Edit Reseller #' + r.id;
-
-document.getElementById('resellerId').value = r.id;
-
-document.getElementById('resellerNama').value = r.nama || '';
-
-document.getElementById('resellerHp').value = r.no_hp || '';
-
-document.getElementById('resellerEmail').value = r.email || '';
-
-document.getElementById('resellerSaldo').value = r.saldo ?? 0;
-
-document.getElementById('resellerStatus').value = r.status || 'aktif';
-
-}
-
-
-
-function resetResellerForm() {
-
-document.getElementById('resellerFormTitle').textContent = 'Tambah Reseller';
-
-document.getElementById('resellerForm').reset();
-
-document.getElementById('resellerId').value = '';
-
-document.getElementById('resellerMsg').textContent = '';
-
-}
-
-
-
-document.getElementById('resellerForm').addEventListener('submit', async (e) => {
-
-e.preventDefault();
-
-document.getElementById('resellerMsg').textContent = '';
-
-const id = document.getElementById('resellerId').value;
-
-const payload = {
-
-...(id ? { id: Number(id) } : {}),
-
-nama: document.getElementById('resellerNama').value,
-
-no_hp: document.getElementById('resellerHp').value,
-
-email: document.getElementById('resellerEmail').value,
-
-saldo: Number(document.getElementById('resellerSaldo').value || 0),
-
-status: document.getElementById('resellerStatus').value
-
-};
-
-const res = await adminFetch('/api/admin/resellers', {
-
-method: id ? 'PUT' : 'POST',
-
-body: JSON.stringify(payload)
-
-});
-
-if (!res.status) {
-
-document.getElementById('resellerMsg').textContent = res.message;
-
-return;
-
-}
-
-resetResellerForm();
-
-loadResellers();
-
-});
-
-
-
-async function deleteReseller(id) {
-
-if (!confirm('Hapus reseller #' + id + '?')) return;
-
-const res = await adminFetch('/api/admin/resellers?id=' + id, { method: 'DELETE' });
-
-if (res.status) loadResellers();
-
-}
-
-
-
-// --- PRODUK PULSA ---
-
-async function loadProduk() {
-
-const res = await adminFetch('/api/admin/produk');
-
-if (!res.status) return;
-
-produkCache = res.data || [];
-
-const tbody = document.getElementById('produkTableBody');
-
-tbody.innerHTML = produkCache.map(p => `
-
-<tr>
-
-<td><strong>${p.kode_produk}</strong></td>
-
-<td>${p.nama_produk}</td>
-
-<td>${p.provider}</td>
-
-<td>${fmtRp(p.harga_modal)}</td>
-
-<td><strong>${fmtRp(p.harga_jual)}</strong></td>
-
-<td><span class="${p.is_aktif ? 'badge-ok' : 'badge-off'}">${p.is_aktif ? 'Aktif' : 'Nonaktif'}</span></td>
-
-<td class="actions">
-
-<button class="btn-secondary btn-sm" onclick="editProduk(${p.id})">Edit</button>
-
-<button class="btn-danger btn-sm" onclick="deleteProduk(${p.id})">Hapus</button>
-
-</td>
-
-</tr>
-
-`).join('');
-
-}
-
-
-
-function editProduk(id) {
-
-const p = produkCache.find(x => x.id === id);
-
-if (!p) return;
-
-document.getElementById('produkFormTitle').textContent = 'Edit Produk #' + p.id;
-
-document.getElementById('produkId').value = p.id;
-
-document.getElementById('produkKode').value = p.kode_produk || '';
-
-document.getElementById('produkNama').value = p.nama_produk || '';
-
-document.getElementById('produkProvider').value = p.provider || '';
-
-document.getElementById('produkKategori').value = p.kategori || 'Pulsa';
-
-document.getElementById('produkNominal').value = p.nominal ?? 0;
-
-document.getElementById('produkModal').value = p.harga_modal ?? 0;
-
-document.getElementById('produkJual').value = p.harga_jual ?? 0;
-
-document.getElementById('produkAktif').value = String(Boolean(p.is_aktif));
-
-}
-
-
-
-function resetProdukForm() {
-
-document.getElementById('produkFormTitle').textContent = 'Tambah Produk Pulsa';
-
-document.getElementById('produkForm').reset();
-
-document.getElementById('produkId').value = '';
-
-document.getElementById('produkMsg').textContent = '';
-
-}
-
-
-
-document.getElementById('produkForm').addEventListener('submit', async (e) => {
-
-e.preventDefault();
-
-document.getElementById('produkMsg').textContent = '';
-
-const id = document.getElementById('produkId').value;
-
-const payload = {
-
-...(id ? { id: Number(id) } : {}),
-
-kode_produk: document.getElementById('produkKode').value,
-
-nama_produk: document.getElementById('produkNama').value,
-
-provider: document.getElementById('produkProvider').value,
-
-kategori: document.getElementById('produkKategori').value,
-
-nominal: Number(document.getElementById('produkNominal').value || 0),
-
-harga_modal: Number(document.getElementById('produkModal').value || 0),
-
-harga_jual: Number(document.getElementById('produkJual').value || 0),
-
-is_aktif: document.getElementById('produkAktif').value === 'true'
-
-};
-
-const res = await adminFetch('/api/admin/produk', {
-
-method: id ? 'PUT' : 'POST',
-
-body: JSON.stringify(payload)
-
-});
-
-if (!res.status) {
-
-document.getElementById('produkMsg').textContent = res.message;
-
-return;
-
-}
-
-resetProdukForm();
-
-loadProduk();
-
-});
-
-
-
-async function deleteProduk(id) {
-
-if (!confirm('Hapus produk #' + id + '?')) return;
-
-const res = await adminFetch('/api/admin/produk?id=' + id, { method: 'DELETE' });
-
-if (res.status) loadProduk();
-
-}
-
-
-
-// --- LOG TRANSAKSI ---
-
-function resetFilterLog() {
-
-document.getElementById('filterKode').value = '';
-
-document.getElementById('filterUserId').value = '';
-
-document.getElementById('filterLimit').value = '50';
-
-loadLogTransaksi();
-
-}
-
-
-
-async function loadLogTransaksi() {
-
-const kode = encodeURIComponent(document.getElementById('filterKode').value.trim());
-
-const userId = encodeURIComponent(document.getElementById('filterUserId').value.trim());
-
-const limit = encodeURIComponent(document.getElementById('filterLimit').value || '50');
-
-
-
-const res = await adminFetch(`/api/admin/transaksi?kode=${kode}&user_id=${userId}&limit=${limit}`);
-
-if (!res.status) return;
-
-
-
-const list = res.data || [];
-
-const tbody = document.getElementById('logTableBody');
-
-if (list.length === 0) {
-
-tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Belum ada data transaksi.</td></tr>';
-
-return;
-
-}
-
-
-
-tbody.innerHTML = list.map(item => `
-
-<tr>
-
-<td>${fmtWaktu(item.tgl_entri)}</td>
-
-<td><strong>${item.kode_transaksi || '-'}</strong></td>
-
-<td>${item.nama_reseller || '-'} <small style="color:var(--muted);">(#${item.user_id ?? '-'})</small></td>
-
-<td>${item.tujuan || '-'}</td>
-
-<td><div class="pre-wrap">${item.pesan_sukses_ke_reseller || '-'}</div></td>
-
-<td><div class="pre-wrap" style="color:var(--muted);">${item.pesan || '-'}</div></td>
-
-<td>
-
-<div class="pre-wrap">
-
-Awal: ${fmtRp(item.saldo_sebelumnya)}<br/>
-
-Potong: ${fmtRp(item.nominal_potong)}<br/>
-
-<strong>Akhir: ${fmtRp(item.saldo_terbaru)}</strong>
-
-</div>
-
-</td>
-
-</tr>
-
-`).join('');
-
-}
-
-
-
-if (getToken()) {
-
-showDashboard('admin');
-
-}
-
-</script>
-
+  <!-- HALAMAN LOGIN ADMIN -->
+  <div id="loginView" class="container">
+    <div class="card login-box">
+      <div class="login-header">
+        <h2>Login Admin</h2>
+        <button type="button" class="btn-secondary btn-sm" onclick="toggleTheme()" id="themeBtnLogin">Dark Mode</button>
+      </div>
+      <form id="loginForm">
+        <div style="margin-bottom:12px;">
+          <label>Username</label>
+          <input type="text" id="loginUser" required placeholder="admin" />
+        </div>
+        <div style="margin-bottom:14px;">
+          <label>Password</label>
+          <input type="password" id="loginPass" required placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;">Masuk</button>
+        <div id="loginError" class="msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HALAMAN DASHBOARD ADMIN -->
+  <div id="dashboardView" class="container hidden">
+    <div class="topbar">
+      <div>
+        <h2 style="margin-bottom:2px;">Dashboard Admin</h2>
+        <small id="adminInfo" style="color:var(--muted);"></small>
+      </div>
+      <div class="topbar-right">
+        <button type="button" class="btn-secondary" onclick="toggleTheme()" id="themeBtnDash">Dark Mode</button>
+        <button type="button" class="btn-secondary" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button id="tabReseller" class="tab-btn active" onclick="switchTab('reseller')">Manajemen Reseller</button>
+      <button id="tabProduk" class="tab-btn" onclick="switchTab('produk')">Manajemen Produk Pulsa</button>
+      <button id="tabLog" class="tab-btn" onclick="switchTab('log')">Log Transaksi</button>
+    </div>
+
+    <!-- TAB RESELLER -->
+    <div id="sectionReseller">
+      <div class="card">
+        <h3 id="resellerFormTitle">Tambah Reseller</h3>
+        <form id="resellerForm">
+          <input type="hidden" id="resellerId" />
+          <div class="row">
+            <div>
+              <label>Nama Reseller *</label>
+              <input type="text" id="resellerNama" required />
+            </div>
+            <div>
+              <label>Auth User ID (UUID)</label>
+              <input type="text" id="resellerAuthUserId" placeholder="Opsional: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+            </div>
+            <div>
+              <label>No. HP</label>
+              <input type="text" id="resellerHp" />
+            </div>
+            <div>
+              <label>Email</label>
+              <input type="email" id="resellerEmail" />
+            </div>
+            <div>
+              <label>Saldo (Rp)</label>
+              <input type="number" id="resellerSaldo" step="any" value="0" />
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="resellerStatus">
+                <option value="aktif">aktif</option>
+                <option value="nonaktif">nonaktif</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn-primary">Simpan Reseller</button>
+            <button type="button" class="btn-secondary" onclick="resetResellerForm()">Batal</button>
+          </div>
+          <div id="resellerMsg" class="msg"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Daftar Reseller</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nama</th>
+                <th>Auth User ID</th>
+                <th>No. HP</th>
+                <th>Saldo</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="resellerTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB PRODUK PULSA -->
+    <div id="sectionProduk" class="hidden">
+      <div class="card">
+        <h3 id="produkFormTitle">Tambah Produk Pulsa</h3>
+        <form id="produkForm">
+          <input type="hidden" id="produkId" />
+          <div class="row">
+            <div>
+              <label>Kode Produk *</label>
+              <input type="text" id="produkKode" required placeholder="S10" />
+            </div>
+            <div>
+              <label>Nama Produk *</label>
+              <input type="text" id="produkNama" required placeholder="Telkomsel 10rb" />
+            </div>
+            <div>
+              <label>Provider *</label>
+              <input type="text" id="produkProvider" required placeholder="Telkomsel" />
+            </div>
+            <div>
+              <label>Kategori</label>
+              <input type="text" id="produkKategori" value="Pulsa" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Nominal</label>
+              <input type="number" id="produkNominal" step="any" value="10000" />
+            </div>
+            <div>
+              <label>Harga Modal (Rp)</label>
+              <input type="number" id="produkModal" step="any" value="0" />
+            </div>
+            <div>
+              <label>Harga Jual (Rp)</label>
+              <input type="number" id="produkJual" step="any" value="0" />
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="produkAktif">
+                <option value="true">Aktif</option>
+                <option value="false">Nonaktif</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn-primary">Simpan Produk</button>
+            <button type="button" class="btn-secondary" onclick="resetProdukForm()">Batal</button>
+          </div>
+          <div id="produkMsg" class="msg"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Daftar Produk Pulsa</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Nama Produk</th>
+                <th>Provider</th>
+                <th>Modal</th>
+                <th>Harga Jual</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="produkTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB LOG TRANSAKSI -->
+    <div id="sectionLog" class="hidden">
+      <div class="card">
+        <h3>Filter Log Transaksi</h3>
+        <div class="row" style="align-items:end;">
+          <div>
+            <label>Kode Transaksi (RefID)</label>
+            <input type="text" id="filterKode" placeholder="TRX..." />
+          </div>
+          <div>
+            <label>User ID Reseller</label>
+            <input type="text" id="filterUserId" placeholder="Contoh: 1" />
+          </div>
+          <div>
+            <label>Data per Halaman</label>
+            <select id="filterLimit" onchange="loadLogTransaksi(1)">
+              <option value="10">10 / halaman</option>
+              <option value="25" selected>25 / halaman</option>
+              <option value="50">50 / halaman</option>
+              <option value="100">100 / halaman</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn-primary" onclick="loadLogTransaksi(1)">Cari / Refresh</button>
+            <button type="button" class="btn-secondary" onclick="resetFilterLog()">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Riwayat / Log Transaksi</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Kode TRX</th>
+                <th>Reseller</th>
+                <th>Tujuan</th>
+                <th>Pesan Reseller</th>
+                <th>Respon OtoMax</th>
+                <th>Mutasi Saldo</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar">
+          <div id="logPageInfo">Halaman 1 dari 1 (0 data)</div>
+          <div class="pagination-actions">
+            <button type="button" id="btnPrevLog" class="btn-secondary btn-sm" onclick="gantiHalamanLog(-1)">Sebelumnya</button>
+            <button type="button" id="btnNextLog" class="btn-secondary btn-sm" onclick="gantiHalamanLog(1)">Berikutnya</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    const TOKEN_KEY = 'admin_jwt_token';
+    const THEME_KEY = 'admin_dark_theme';
+    let resellerCache = [];
+    let produkCache = [];
+    let logPage = 1;
+    let logTotalPages = 1;
+
+    function applyTheme(isDark) {
+      document.documentElement.classList.toggle('dark-theme', isDark);
+      const label = isDark ? 'Light Mode' : 'Dark Mode';
+      const btnLogin = document.getElementById('themeBtnLogin');
+      const btnDash = document.getElementById('themeBtnDash');
+      if (btnLogin) btnLogin.textContent = label;
+      if (btnDash) btnDash.textContent = label;
+    }
+
+    function toggleTheme() {
+      const isDark = !document.documentElement.classList.contains('dark-theme');
+      localStorage.setItem(THEME_KEY, isDark ? '1' : '0');
+      applyTheme(isDark);
+    }
+
+    applyTheme(localStorage.getItem(THEME_KEY) === '1');
+
+    const fmtRp = (n) => (n === null || n === undefined || Number.isNaN(Number(n)))
+      ? '-'
+      : 'Rp' + Number(n).toLocaleString('id-ID');
+
+    const fmtWaktu = (iso) => {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('id-ID');
+    };
+
+    const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
+
+    async function adminFetch(path, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken(),
+        ...(options.headers || {})
+      };
+      const res = await fetch(API_BASE + path, { ...options, headers });
+      if (res.status === 401) {
+        logout();
+        throw new Error('Sesi berakhir, silakan login ulang.');
+      }
+      return res.json();
+    }
+
+    function showDashboard(username) {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('dashboardView').classList.remove('hidden');
+      document.getElementById('adminInfo').textContent = 'Login sebagai: ' + (username || 'admin');
+      loadResellers();
+      loadProduk();
+      loadLogTransaksi(1);
+    }
+
+    function logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('loginView').classList.remove('hidden');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('loginError').textContent = '';
+      const username = document.getElementById('loginUser').value.trim();
+      const password = document.getElementById('loginPass').value;
+
+      try {
+        const res = await fetch(API_BASE + '/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!data.status) {
+          document.getElementById('loginError').textContent = data.message || 'Login gagal.';
+          return;
+        }
+        localStorage.setItem(TOKEN_KEY, data.token);
+        showDashboard(data.username);
+      } catch (err) {
+        document.getElementById('loginError').textContent = 'Gagal terhubung ke server.';
+      }
+    });
+
+    function switchTab(tab) {
+      document.getElementById('tabReseller').classList.toggle('active', tab === 'reseller');
+      document.getElementById('tabProduk').classList.toggle('active', tab === 'produk');
+      document.getElementById('tabLog').classList.toggle('active', tab === 'log');
+
+      document.getElementById('sectionReseller').classList.toggle('hidden', tab !== 'reseller');
+      document.getElementById('sectionProduk').classList.toggle('hidden', tab !== 'produk');
+      document.getElementById('sectionLog').classList.toggle('hidden', tab !== 'log');
+
+      if (tab === 'log') loadLogTransaksi(1);
+    }
+
+    // --- RESELLER ---
+    async function loadResellers() {
+      const res = await adminFetch('/api/admin/resellers');
+      if (!res.status) return;
+      resellerCache = res.data || [];
+      const tbody = document.getElementById('resellerTableBody');
+      tbody.innerHTML = resellerCache.map(r => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.nama}</td>
+          <td><small style="color:var(--muted);">${r.auth_user_id || '-'}</small></td>
+          <td>${r.no_hp || '-'}</td>
+          <td><strong>${fmtRp(r.saldo)}</strong></td>
+          <td><span class="${r.status === 'aktif' ? 'badge-ok' : 'badge-off'}">${r.status}</span></td>
+          <td class="actions">
+            <button class="btn-secondary btn-sm" onclick="editReseller(${r.id})">Edit</button>
+            <button class="btn-danger btn-sm" onclick="deleteReseller(${r.id})">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function editReseller(id) {
+      const r = resellerCache.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('resellerFormTitle').textContent = 'Edit Reseller #' + r.id;
+      document.getElementById('resellerId').value = r.id;
+      document.getElementById('resellerNama').value = r.nama || '';
+      document.getElementById('resellerAuthUserId').value = r.auth_user_id || '';
+      document.getElementById('resellerHp').value = r.no_hp || '';
+      document.getElementById('resellerEmail').value = r.email || '';
+      document.getElementById('resellerSaldo').value = r.saldo ?? 0;
+      document.getElementById('resellerStatus').value = r.status || 'aktif';
+    }
+
+    function resetResellerForm() {
+      document.getElementById('resellerFormTitle').textContent = 'Tambah Reseller';
+      document.getElementById('resellerForm').reset();
+      document.getElementById('resellerId').value = '';
+      document.getElementById('resellerAuthUserId').value = '';
+      document.getElementById('resellerMsg').textContent = '';
+    }
+
+    document.getElementById('resellerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('resellerMsg').textContent = '';
+      const id = document.getElementById('resellerId').value;
+      const payload = {
+        ...(id ? { id: Number(id) } : {}),
+        nama: document.getElementById('resellerNama').value,
+        auth_user_id: document.getElementById('resellerAuthUserId').value.trim() || null,
+        no_hp: document.getElementById('resellerHp').value,
+        email: document.getElementById('resellerEmail').value,
+        saldo: Number(document.getElementById('resellerSaldo').value || 0),
+        status: document.getElementById('resellerStatus').value
+      };
+      const res = await adminFetch('/api/admin/resellers', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (!res.status) {
+        document.getElementById('resellerMsg').textContent = res.message;
+        return;
+      }
+      resetResellerForm();
+      loadResellers();
+    });
+
+    async function deleteReseller(id) {
+      if (!confirm('Hapus reseller #' + id + '?')) return;
+      const res = await adminFetch('/api/admin/resellers?id=' + id, { method: 'DELETE' });
+      if (res.status) loadResellers();
+    }
+
+    // --- PRODUK PULSA ---
+    async function loadProduk() {
+      const res = await adminFetch('/api/admin/produk');
+      if (!res.status) return;
+      produkCache = res.data || [];
+      const tbody = document.getElementById('produkTableBody');
+      tbody.innerHTML = produkCache.map(p => `
+        <tr>
+          <td><strong>${p.kode_produk}</strong></td>
+          <td>${p.nama_produk}</td>
+          <td>${p.provider}</td>
+          <td>${fmtRp(p.harga_modal)}</td>
+          <td><strong>${fmtRp(p.harga_jual)}</strong></td>
+          <td><span class="${p.is_aktif ? 'badge-ok' : 'badge-off'}">${p.is_aktif ? 'Aktif' : 'Nonaktif'}</span></td>
+          <td class="actions">
+            <button class="btn-secondary btn-sm" onclick="editProduk(${p.id})">Edit</button>
+            <button class="btn-danger btn-sm" onclick="deleteProduk(${p.id})">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function editProduk(id) {
+      const p = produkCache.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('produkFormTitle').textContent = 'Edit Produk #' + p.id;
+      document.getElementById('produkId').value = p.id;
+      document.getElementById('produkKode').value = p.kode_produk || '';
+      document.getElementById('produkNama').value = p.nama_produk || '';
+      document.getElementById('produkProvider').value = p.provider || '';
+      document.getElementById('produkKategori').value = p.kategori || 'Pulsa';
+      document.getElementById('produkNominal').value = p.nominal ?? 0;
+      document.getElementById('produkModal').value = p.harga_modal ?? 0;
+      document.getElementById('produkJual').value = p.harga_jual ?? 0;
+      document.getElementById('produkAktif').value = String(Boolean(p.is_aktif));
+    }
+
+    function resetProdukForm() {
+      document.getElementById('produkFormTitle').textContent = 'Tambah Produk Pulsa';
+      document.getElementById('produkForm').reset();
+      document.getElementById('produkId').value = '';
+      document.getElementById('produkMsg').textContent = '';
+    }
+
+    document.getElementById('produkForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('produkMsg').textContent = '';
+      const id = document.getElementById('produkId').value;
+      const payload = {
+        ...(id ? { id: Number(id) } : {}),
+        kode_produk: document.getElementById('produkKode').value,
+        nama_produk: document.getElementById('produkNama').value,
+        provider: document.getElementById('produkProvider').value,
+        kategori: document.getElementById('produkKategori').value,
+        nominal: Number(document.getElementById('produkNominal').value || 0),
+        harga_modal: Number(document.getElementById('produkModal').value || 0),
+        harga_jual: Number(document.getElementById('produkJual').value || 0),
+        is_aktif: document.getElementById('produkAktif').value === 'true'
+      };
+      const res = await adminFetch('/api/admin/produk', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (!res.status) {
+        document.getElementById('produkMsg').textContent = res.message;
+        return;
+      }
+      resetProdukForm();
+      loadProduk();
+    });
+
+    async function deleteProduk(id) {
+      if (!confirm('Hapus produk #' + id + '?')) return;
+      const res = await adminFetch('/api/admin/produk?id=' + id, { method: 'DELETE' });
+      if (res.status) loadProduk();
+    }
+
+    // --- LOG TRANSAKSI ---
+    function resetFilterLog() {
+      document.getElementById('filterKode').value = '';
+      document.getElementById('filterUserId').value = '';
+      document.getElementById('filterLimit').value = '25';
+      loadLogTransaksi(1);
+    }
+
+    function gantiHalamanLog(delta) {
+      const targetPage = logPage + delta;
+      if (targetPage < 1 || targetPage > logTotalPages) return;
+      loadLogTransaksi(targetPage);
+    }
+
+    async function loadLogTransaksi(page = 1) {
+      logPage = Math.max(1, page);
+      const kode = encodeURIComponent(document.getElementById('filterKode').value.trim());
+      const userId = encodeURIComponent(document.getElementById('filterUserId').value.trim());
+      const limit = encodeURIComponent(document.getElementById('filterLimit').value || '25');
+
+      const res = await adminFetch(`/api/admin/transaksi?kode=${kode}&user_id=${userId}&page=${logPage}&limit=${limit}`);
+      if (!res.status) return;
+
+      const list = res.data || [];
+      const pg = res.pagination || { page: 1, totalPages: 1, total: list.length };
+      logPage = pg.page;
+      logTotalPages = Math.max(1, pg.totalPages);
+
+      document.getElementById('logPageInfo').textContent =
+        `Halaman ${logPage} dari ${logTotalPages} (${pg.total} data)`;
+      document.getElementById('btnPrevLog').disabled = logPage <= 1;
+      document.getElementById('btnNextLog').disabled = logPage >= logTotalPages;
+
+      const tbody = document.getElementById('logTableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Belum ada data transaksi.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(item => `
+        <tr>
+          <td>${fmtWaktu(item.tgl_entri)}</td>
+          <td><strong>${item.kode_transaksi || '-'}</strong></td>
+          <td>${item.nama_reseller || '-'} <small style="color:var(--muted);">(#${item.user_id ?? '-'})</small></td>
+          <td>${item.tujuan || '-'}</td>
+          <td><div class="pre-wrap">${item.pesan_sukses_ke_reseller || '-'}</div></td>
+          <td><div class="pre-wrap" style="color:var(--muted);">${item.pesan || '-'}</div></td>
+          <td>
+            <div class="pre-wrap">
+              Awal: ${fmtRp(item.saldo_sebelumnya)}<br/>
+              Potong: ${fmtRp(item.nominal_potong)}<br/>
+              <strong>Akhir: ${fmtRp(item.saldo_terbaru)}</strong>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    if (getToken()) {
+      showDashboard('admin');
+    }
+  </script>
 </body>
-
-</html> 
+</html>
