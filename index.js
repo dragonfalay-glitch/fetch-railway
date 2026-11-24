@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 // Admin sesi (pastikan ADMIN_USER, ADMIN_PASS, dan ADMIN_SECRET terisi di Railway)
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASS = process.env.ADMIN_PASS || '';
-const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'f1ec639bf7ebae552dcec304363635c7bce9b14943f61fd8a295c73986508b9b';
 
 function buatAdminToken(username) {
     const payload = Buffer.from(JSON.stringify({
@@ -296,9 +296,9 @@ const server = http.createServer(async (req, res) => {
                 .order('tgl_entri', { ascending: false })
                 .limit(limit);
 
-            if (refID) {
-                query = query.eq('kode_transaksi', refID);
-            }
+            // if (refID) {
+            //     query = query.eq('kode_transaksi', refID);
+            // }
             if (userID) {
                 query = query.eq('user_id', userID);
             }
@@ -388,7 +388,6 @@ const server = http.createServer(async (req, res) => {
             }
 
             // --- RESELLER (USERS) ---
-            // --- RESELLER (USERS) ---
             if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/resellers') {
                 const { data, error } = await supabase
                     .from('users')
@@ -449,7 +448,7 @@ const server = http.createServer(async (req, res) => {
                 if (error) return kirimJSON(res, 400, { status: false, message: error.message });
                 return kirimJSON(res, 200, { status: true, data });
             }
-            
+
             if (req.method === 'DELETE' && parsedUrl.pathname === '/api/admin/resellers') {
                 const id = parsedUrl.searchParams.get('id');
                 if (!id) return kirimJSON(res, 400, { status: false, message: 'Parameter id wajib ada.' });
