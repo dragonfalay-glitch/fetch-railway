@@ -216,7 +216,7 @@ const server = http.createServer(async (req, res) => {
                         return;
                     }
 
-                    // Cek apakah produk dari frontend ada di produk_pulsa dan is_active === true
+                    // Cek apakah produk dari frontend ada di produk_pulsa (baca huruf kecil & besar) dan is_active === true
                     const kodeProdukClean = String(product || '').trim().toUpperCase();
                     if (!kodeProdukClean) {
                         res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
@@ -224,23 +224,25 @@ const server = http.createServer(async (req, res) => {
                         return;
                     }
 
-                    const { data: produkValid, error: produkValidError } = await supabase
+                    const { data: produkRows, error: produkValidError } = await supabase
                         .from('produk_pulsa')
                         .select('id, kode_produk, harga_jual, is_active')
-                        .eq('kode_produk', kodeProdukClean)
+                        .ilike('kode_produk', kodeProdukClean)
                         .eq('is_active', true)
-                        .maybeSingle();
+                        .limit(1);
 
                     if (produkValidError) {
                         console.error("Supabase Cek Produk Error:", produkValidError.message);
                         res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end('Gagal, Produk pulsa kosong.');
+                        res.end('Gagal memvalidasi produk pulsa.');
                         return;
                     }
 
-                    if (!produkValid || String(produkValid.kode_produk).toUpperCase() !== kodeProdukClean || produkValid.is_active !== true) {
+                    const produkValid = Array.isArray(produkRows) ? produkRows[0] : null;
+                    const kodeDbUpper = String(produkValid?.kode_produk || '').trim().toUpperCase();
+                    if (!produkValid || kodeDbUpper !== kodeProdukClean || produkValid.is_active !== true) {
                         res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end(`Produk ${kodeProdukClean} tidak tersedia atau tidak aktif.`);
+                        res.end(`Gagal, Kode produk ${kodeProdukClean} tidak valid atau tidak aktif.`);
                         return;
                     }
 
