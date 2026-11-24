@@ -288,7 +288,7 @@ const server = http.createServer(async (req, res) => {
                             console.error("Supabase Insert Error:", insertError.message);
                         } else if (isTransaksiSukses(responseText)) {
                             // 1. Cari harga jual dari tabel produk_pulsa jika ada
-                            let nominalPotong = 0;
+                            let nominalPotong = Number(produkValid?.harga_jual) || 0;
                             if (product) {
                                 const { data: produkRow, error: produkError } = await supabase
                                     .from('produk_pulsa')
