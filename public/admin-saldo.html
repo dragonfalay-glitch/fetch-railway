@@ -149,7 +149,6 @@
     </div>
 
     <!-- TAB RESELLER -->
-    <!-- TAB RESELLER -->
     <div id="sectionReseller">
       <div class="card">
         <h3 id="resellerFormTitle">Tambah Reseller</h3>
@@ -288,7 +287,6 @@
     </div>
 
     <!-- TAB LOG TRANSAKSI -->
-   <!-- TAB LOG TRANSAKSI -->
     <div id="sectionLog" class="hidden">
       <div class="card">
         <h3>Filter Log Transaksi</h3>
@@ -345,6 +343,7 @@
         </div>
       </div>
     </div>
+  </div>
 
   <script>
     const API_BASE = '';
@@ -352,6 +351,8 @@
     const THEME_KEY = 'admin_dark_theme';
     let resellerCache = [];
     let produkCache = [];
+    let logPage = 1;
+    let logTotalPages = 1;
 
     function applyTheme(isDark) {
       document.documentElement.classList.toggle('dark-theme', isDark);
@@ -402,7 +403,7 @@
       document.getElementById('adminInfo').textContent = 'Login sebagai: ' + (username || 'admin');
       loadResellers();
       loadProduk();
-      loadLogTransaksi();
+      loadLogTransaksi(1);
     }
 
     function logout() {
@@ -438,207 +439,4 @@
     function switchTab(tab) {
       document.getElementById('tabReseller').classList.toggle('active', tab === 'reseller');
       document.getElementById('tabProduk').classList.toggle('active', tab === 'produk');
-      document.getElementById('tabLog').classList.toggle('active', tab === 'log');
-
-      document.getElementById('sectionReseller').classList.toggle('hidden', tab !== 'reseller');
-      document.getElementById('sectionProduk').classList.toggle('hidden', tab !== 'produk');
-      document.getElementById('sectionLog').classList.toggle('hidden', tab !== 'log');
-
-      if (tab === 'log') loadLogTransaksi();
-    }
-
-    // --- RESELLER ---
-    async function loadResellers() {
-      const res = await adminFetch('/api/admin/resellers');
-      if (!res.status) return;
-      resellerCache = res.data || [];
-      const tbody = document.getElementById('resellerTableBody');
-      tbody.innerHTML = resellerCache.map(r => `
-        <tr>
-          <td>${r.id}</td>
-          <td>${r.nama}</td>
-          <td>${r.no_hp || '-'}</td>
-          <td><strong>${fmtRp(r.saldo)}</strong></td>
-          <td><span class="${r.status === 'aktif' ? 'badge-ok' : 'badge-off'}">${r.status}</span></td>
-          <td class="actions">
-            <button class="btn-secondary btn-sm" onclick="editReseller(${r.id})">Edit</button>
-            <button class="btn-danger btn-sm" onclick="deleteReseller(${r.id})">Hapus</button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    function editReseller(id) {
-      const r = resellerCache.find(x => x.id === id);
-      if (!r) return;
-      document.getElementById('resellerFormTitle').textContent = 'Edit Reseller #' + r.id;
-      document.getElementById('resellerId').value = r.id;
-      document.getElementById('resellerNama').value = r.nama || '';
-      document.getElementById('resellerHp').value = r.no_hp || '';
-      document.getElementById('resellerEmail').value = r.email || '';
-      document.getElementById('resellerSaldo').value = r.saldo ?? 0;
-      document.getElementById('resellerStatus').value = r.status || 'aktif';
-    }
-
-    function resetResellerForm() {
-      document.getElementById('resellerFormTitle').textContent = 'Tambah Reseller';
-      document.getElementById('resellerForm').reset();
-      document.getElementById('resellerId').value = '';
-      document.getElementById('resellerMsg').textContent = '';
-    }
-
-    document.getElementById('resellerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      document.getElementById('resellerMsg').textContent = '';
-      const id = document.getElementById('resellerId').value;
-      const payload = {
-        ...(id ? { id: Number(id) } : {}),
-        nama: document.getElementById('resellerNama').value,
-        no_hp: document.getElementById('resellerHp').value,
-        email: document.getElementById('resellerEmail').value,
-        saldo: Number(document.getElementById('resellerSaldo').value || 0),
-        status: document.getElementById('resellerStatus').value
-      };
-      const res = await adminFetch('/api/admin/resellers', {
-        method: id ? 'PUT' : 'POST',
-        body: JSON.stringify(payload)
-      });
-      if (!res.status) {
-        document.getElementById('resellerMsg').textContent = res.message;
-        return;
-      }
-      resetResellerForm();
-      loadResellers();
-    });
-
-    async function deleteReseller(id) {
-      if (!confirm('Hapus reseller #' + id + '?')) return;
-      const res = await adminFetch('/api/admin/resellers?id=' + id, { method: 'DELETE' });
-      if (res.status) loadResellers();
-    }
-
-    // --- PRODUK PULSA ---
-    async function loadProduk() {
-      const res = await adminFetch('/api/admin/produk');
-      if (!res.status) return;
-      produkCache = res.data || [];
-      const tbody = document.getElementById('produkTableBody');
-      tbody.innerHTML = produkCache.map(p => `
-        <tr>
-          <td><strong>${p.kode_produk}</strong></td>
-          <td>${p.nama_produk}</td>
-          <td>${p.provider}</td>
-          <td>${fmtRp(p.harga_modal)}</td>
-          <td><strong>${fmtRp(p.harga_jual)}</strong></td>
-          <td><span class="${p.is_aktif ? 'badge-ok' : 'badge-off'}">${p.is_aktif ? 'Aktif' : 'Nonaktif'}</span></td>
-          <td class="actions">
-            <button class="btn-secondary btn-sm" onclick="editProduk(${p.id})">Edit</button>
-            <button class="btn-danger btn-sm" onclick="deleteProduk(${p.id})">Hapus</button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    function editProduk(id) {
-      const p = produkCache.find(x => x.id === id);
-      if (!p) return;
-      document.getElementById('produkFormTitle').textContent = 'Edit Produk #' + p.id;
-      document.getElementById('produkId').value = p.id;
-      document.getElementById('produkKode').value = p.kode_produk || '';
-      document.getElementById('produkNama').value = p.nama_produk || '';
-      document.getElementById('produkProvider').value = p.provider || '';
-      document.getElementById('produkKategori').value = p.kategori || 'Pulsa';
-      document.getElementById('produkNominal').value = p.nominal ?? 0;
-      document.getElementById('produkModal').value = p.harga_modal ?? 0;
-      document.getElementById('produkJual').value = p.harga_jual ?? 0;
-      document.getElementById('produkAktif').value = String(Boolean(p.is_aktif));
-    }
-
-    function resetProdukForm() {
-      document.getElementById('produkFormTitle').textContent = 'Tambah Produk Pulsa';
-      document.getElementById('produkForm').reset();
-      document.getElementById('produkId').value = '';
-      document.getElementById('produkMsg').textContent = '';
-    }
-
-    document.getElementById('produkForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      document.getElementById('produkMsg').textContent = '';
-      const id = document.getElementById('produkId').value;
-      const payload = {
-        ...(id ? { id: Number(id) } : {}),
-        kode_produk: document.getElementById('produkKode').value,
-        nama_produk: document.getElementById('produkNama').value,
-        provider: document.getElementById('produkProvider').value,
-        kategori: document.getElementById('produkKategori').value,
-        nominal: Number(document.getElementById('produkNominal').value || 0),
-        harga_modal: Number(document.getElementById('produkModal').value || 0),
-        harga_jual: Number(document.getElementById('produkJual').value || 0),
-        is_aktif: document.getElementById('produkAktif').value === 'true'
-      };
-      const res = await adminFetch('/api/admin/produk', {
-        method: id ? 'PUT' : 'POST',
-        body: JSON.stringify(payload)
-      });
-      if (!res.status) {
-        document.getElementById('produkMsg').textContent = res.message;
-        return;
-      }
-      resetProdukForm();
-      loadProduk();
-    });
-
-    async function deleteProduk(id) {
-      if (!confirm('Hapus produk #' + id + '?')) return;
-      const res = await adminFetch('/api/admin/produk?id=' + id, { method: 'DELETE' });
-      if (res.status) loadProduk();
-    }
-
-    // --- LOG TRANSAKSI ---
-    function resetFilterLog() {
-      document.getElementById('filterKode').value = '';
-      document.getElementById('filterUserId').value = '';
-      document.getElementById('filterLimit').value = '50';
-      loadLogTransaksi();
-    }
-
-    async function loadLogTransaksi() {
-      const kode = encodeURIComponent(document.getElementById('filterKode').value.trim());
-      const userId = encodeURIComponent(document.getElementById('filterUserId').value.trim());
-      const limit = encodeURIComponent(document.getElementById('filterLimit').value || '50');
-
-      const res = await adminFetch(`/api/admin/transaksi?kode=${kode}&user_id=${userId}&limit=${limit}`);
-      if (!res.status) return;
-
-      const list = res.data || [];
-      const tbody = document.getElementById('logTableBody');
-      if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Belum ada data transaksi.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = list.map(item => `
-        <tr>
-          <td>${fmtWaktu(item.tgl_entri)}</td>
-          <td><strong>${item.kode_transaksi || '-'}</strong></td>
-          <td>${item.nama_reseller || '-'} <small style="color:var(--muted);">(#${item.user_id ?? '-'})</small></td>
-          <td>${item.tujuan || '-'}</td>
-          <td><div class="pre-wrap">${item.pesan_sukses_ke_reseller || '-'}</div></td>
-          <td><div class="pre-wrap" style="color:var(--muted);">${item.pesan || '-'}</div></td>
-          <td>
-            <div class="pre-wrap">
-              Awal: ${fmtRp(item.saldo_sebelumnya)}<br/>
-              Potong: ${fmtRp(item.nominal_potong)}<br/>
-              <strong>Akhir: ${fmtRp(item.saldo_terbaru)}</strong>
-            </div>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    if (getToken()) {
-      showDashboard('admin');
-    }
-  </script>
-</body>
-</html>
+      document.getElementById('tabLog').classList.toggle
