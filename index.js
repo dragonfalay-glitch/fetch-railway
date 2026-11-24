@@ -154,6 +154,39 @@ const server = http.createServer(async (req, res) => {
                     const token = data.token || '';
                     const userID = data.userID ?? null;
 
+                    // Cek apakah userID dari frontend terdaftar di kolom user_id pada tabel users
+                    if (!userID || String(userID).trim() === '') {
+                        res.writeHead(403, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end('anda bukan reseller pulsa');
+                        return;
+                    }
+
+                    if (!supabaseUrl || !supabaseKey) {
+                        res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end('Konfigurasi Supabase belum lengkap.');
+                        return;
+                    }
+
+                    const userIdClean = String(userID).trim();
+                    const { data: resellerRow, error: resellerError } = await supabase
+                        .from('users')
+                        .select('id, user_id, status')
+                        .eq('user_id', userIdClean)
+                        .maybeSingle();
+
+                    if (resellerError) {
+                        console.error("Supabase Cek Reseller Error:", resellerError.message);
+                        res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end('Gagal memvalidasi data reseller.');
+                        return;
+                    }
+
+                    if (!resellerRow || String(resellerRow.user_id) !== userIdClean || (resellerRow.status && resellerRow.status !== 'aktif')) {
+                        res.writeHead(403, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end('anda bukan reseller pulsa');
+                        return;
+                    }
+
                     // Target URL ke OtoMax
                     const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}&token=${encodeURIComponent(token)}`;
 
