@@ -1,16 +1,124 @@
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
 
 // Menggunakan nama environment variable yang benar sesuai standar Railway
 const supabaseUrl = process.env.URL;
 const supabaseKey = process.env.PUBLIC;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
+// Admin sesi
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'f1ec639bf7ebae552dcec304363635c7bce9b14943f61fd8a295c73986508b9b';
+
+function buatAdminToken(username) {
+    const payload = Buffer.from(JSON.stringify({
+        user: username,
+        exp: Date.now() + 24 * 60 * 60 * 1000
+    })).toString('base64url');
+    const sig = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('base64url');
+    return `${payload}.${sig}`;
+}
+
+function verifikasiAdminToken(req) {
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token || !token.includes('.')) return null;
+
+    const [payload, sig] = token.split('.');
+    const expectedSig = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('base64url');
+    if (sig !== expectedSig) return null;
+
+    try {
+        const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+        if (!parsed.exp || Date.now() > parsed.exp) return null;
+        return parsed;
+    } catch {
+        return null;
+    }
+}
+
+function kirimJSON(res, statusCode, data) {
+    res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=UTF-8' });
+    res.end(JSON.stringify(data));
+}
+
+function bacaBodyJSON(req) {
+    return new Promise((resolve, reject) => {
+        let raw = '';
+        req.on('data', chunk => { raw += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                resolve(raw ? JSON.parse(raw) : {});
+            } catch (err) {
+                reject(err);
+            }
+        });
+    });
+}
+
+// Cek apakah isi kolom `pesan` menandakan transaksi sukses
+function isTransaksiSukses(pesan = '') {
+    const teks = String(pesan).toUpperCase();
+    const adaKataGagal = teks.includes('GAGAL') || teks.includes('SALDO TIDAK CUKUP') || teks.includes('INVALID');
+    const adaKataSukses = teks.includes('SUKSES') || teks.includes('BERHASIL');
+    return adaKataSukses && !adaKataGagal;
+}
+
+// Ambil nominal potong saldo: prioritas dari body `harga`, fallback dari pola harga di `pesan`
+function ambilNominalPotong(data, pesan = '') {
+    const hargaBody = Number(data.harga ?? data.amount ?? data.nominal ?? 0);
+    if (Number.isFinite(hargaBody) && hargaBody > 0) {
+        return hargaBody;
+    }
+
+    const matchHarga = String(pesan).match(/(?:HARGA|RP\.?|NOMINAL|BIAYA)\s*:?\s*([\d.,]+)/i);
+    if (matchHarga && matchHarga[1]) {
+        const bersih = Number(matchHarga[1].replace(/[.,]/g, ''));
+        if (Number.isFinite(bersih) && bersih > 0) {
+            return bersih;
+        }
+    }
+
+    return 0;
+}
+
+// Ekstrak SN umum dari respon OtoMax jika tersedia
+function ekstrakSN(pesan = '') {
+    const matchSN = String(pesan).match(/\bSN\s*[:=/#-]?\s*([A-Za-z0-9-]{6,})/i);
+    return matchSN ? matchSN[1] : null;
+}
+
+// Format rupiah sederhana
+function formatRupiah(angka) {
+    const num = Number(angka || 0);
+    return 'Rp' + num.toLocaleString('id-ID');
+}
+
+// Susun pesan khusus untuk reseller saat transaksi sukses & saldo terpotong
+function buatPesanSuksesReseller({ kodeTransaksi, produk, tujuan, pesanOtoMax, nominalPotong, saldoTerbaru }) {
+    const sn = ekstrakSN(pesanOtoMax);
+    const barisSN = sn ? `\nSN: ${sn}` : '';
+    const barisSaldo = saldoTerbaru !== undefined && saldoTerbaru !== null
+        ? `\nSisa Saldo: ${formatRupiah(saldoTerbaru)}`
+        : '';
+
+    return [
+        `Transaksi SUKSES (${kodeTransaksi})`,
+        `Produk: ${produk}`,
+        `Tujuan: ${tujuan}${barisSN}`,
+        `Potongan Saldo: ${formatRupiah(nominalPotong)}${barisSaldo}`
+    ].join('\n');
+}
+
 const server = http.createServer(async (req, res) => {
-    // 1. Header CORS diperbarui mendukung POST dan OPTIONS
+    // 1. Header CORS diperbarui mendukung GET, POST, PUT, DELETE, OPTIONS, dan Authorization
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
@@ -20,7 +128,7 @@ const server = http.createServer(async (req, res) => {
 
     try {
         const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
-        
+
         if (parsedUrl.pathname === '/') {
             res.writeHead(200, { 'Content-Type': 'text/plain; charset=UTF-8' });
             res.end('Proxy Railway Aktif!');
@@ -30,7 +138,7 @@ const server = http.createServer(async (req, res) => {
         // 2. Tangani Request POST dari Frontend
         if (req.method === 'POST' && (parsedUrl.pathname === '/transaksi' || parsedUrl.pathname === '/run')) {
             let body = '';
-            
+
             req.on('data', chunk => {
                 body += chunk.toString();
             });
@@ -44,13 +152,12 @@ const server = http.createServer(async (req, res) => {
                     const refID = data.refID || '';
                     const sign = data.sign || '';
                     const token = data.token || '';
-                    const userID = data.userID || 0;
+                    const userID = data.userID ?? null;
 
                     // Target URL ke OtoMax
                     const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}&token=${encodeURIComponent(token)}`;
 
-                    // ✅ UBAH MENJADI SEPERTI INI (Hanya mencatat RefID atau status penting saja)
-                  console.log(`Memproses....`);
+                    console.log(`Memproses....`);
 
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -68,17 +175,99 @@ const server = http.createServer(async (req, res) => {
                         return;
                     }
 
-                    // Simpan ke Supabase di background
+                    let pesanSuksesReseller = null;
+
+                    // Simpan ke Supabase dan potong saldo jika kolom `pesan` (responseText) sukses
                     if (supabaseUrl && supabaseKey) {
-                        supabase
+                        const { data: insertedRow, error: insertError } = await supabase
                             .from('inbox_direct_transaksi')
-                            .insert([{ kode_transaksi: refID, tujuan: dest, pesan: responseText, tgl_entri: new Date().toISOString(), user_id:userID }])
-                            .then(({ error }) => { if (error) console.error("Supabase Error:", error.message); })
-                            .catch(dbErr => console.error("DB Error:", dbErr.message));
+                            .insert([{
+                                kode_transaksi: refID,
+                                tujuan: dest,
+                                pesan: responseText,
+                                tgl_entri: new Date().toISOString(),
+                                user_id: userID,
+                                pesan_sukses_ke_reseller: null
+                            }])
+                            .select('id')
+                            .single();
+
+                        if (insertError) {
+                            console.error("Supabase Insert Error:", insertError.message);
+                        } else if (isTransaksiSukses(responseText)) {
+                            // 1. Cari harga jual dari tabel produk_pulsa jika ada
+                            let nominalPotong = 0;
+                            if (product) {
+                                const { data: produkRow, error: produkError } = await supabase
+                                    .from('produk_pulsa')
+                                    .select('harga_jual, is_aktif')
+                                    .eq('kode_produk', String(product).trim().toUpperCase())
+                                    .single();
+
+                                if (!produkError && produkRow && produkRow.is_aktif) {
+                                    nominalPotong = Number(produkRow.harga_jual) || 0;
+                                }
+                            }
+
+                            // 2. Fallback nominal jika tidak ada di produk_pulsa
+                            if (nominalPotong <= 0) {
+                                nominalPotong = ambilNominalPotong(data, responseText);
+                            }
+
+                            // 3. Potong saldo user secara atomik via RPC
+                            if (userID && nominalPotong > 0) {
+                                const { data: rpcResult, error: rpcError } = await supabase.rpc(
+                                    'potong_saldo_transaksi',
+                                    {
+                                        p_user_id: String(userID),
+                                        p_nominal: nominalPotong,
+                                        p_kode_transaksi: String(refID)
+                                    }
+                                );
+
+                                if (rpcError) {
+                                    console.error("Gagal potong saldo (RPC Error):", rpcError.message);
+                                } else if (rpcResult?.ok) {
+                                    pesanSuksesReseller = buatPesanSuksesReseller({
+                                        kodeTransaksi: refID,
+                                        produk: product,
+                                        tujuan: dest,
+                                        pesanOtoMax: responseText,
+                                        nominalPotong,
+                                        saldoTerbaru: rpcResult.saldo_terbaru
+                                    });
+
+                                    if (insertedRow?.id) {
+                                        const { error: updatePesanError } = await supabase
+                                            .from('inbox_direct_transaksi')
+                                            .update({ pesan_sukses_ke_reseller: pesanSuksesReseller })
+                                            .eq('id', insertedRow.id);
+
+                                        if (updatePesanError) {
+                                            console.error("Gagal simpan pesan_sukses_ke_reseller:", updatePesanError.message);
+                                        } else {
+                                            console.log("Saldo berhasil dipotong & pesan reseller tersimpan:", {
+                                                refID,
+                                                nominalPotong,
+                                                saldoTerbaru: rpcResult.saldo_terbaru
+                                            });
+                                        }
+                                    }
+                                } else {
+                                    console.warn("Potong saldo tidak dieksekusi:", rpcResult);
+                                }
+                            } else {
+                                console.warn("Transaksi sukses, tetapi userID atau nominal potong saldo tidak valid:", {
+                                    refID,
+                                    userID,
+                                    nominalPotong
+                                });
+                            }
+                        }
                     }
 
                     res.writeHead(200, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                    res.end(responseText);
+                    res.end(pesanSuksesReseller || responseText);
 
                 } catch (parseErr) {
                     res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
@@ -87,6 +276,7 @@ const server = http.createServer(async (req, res) => {
             });
             return;
         }
+
         // Endpoint ambil riwayat transaksi dari Supabase
         if (req.method === 'GET' && parsedUrl.pathname === '/riwayat') {
             if (!supabaseUrl || !supabaseKey) {
@@ -102,10 +292,13 @@ const server = http.createServer(async (req, res) => {
 
             let query = supabase
                 .from('inbox_direct_transaksi')
-                .select('id, kode_transaksi, tujuan, pesan, tgl_entri, user_id')
+                .select('id, kode_transaksi, tujuan, pesan, pesan_sukses_ke_reseller, tgl_entri, user_id')
                 .order('tgl_entri', { ascending: false })
                 .limit(limit);
 
+            // if (refID) {
+            //     query = query.eq('kode_transaksi', refID);
+            // }
             if (userID) {
                 query = query.eq('user_id', userID);
             }
@@ -119,12 +312,214 @@ const server = http.createServer(async (req, res) => {
                 return;
             }
 
+            const transaksiList = data || [];
+            const kodeList = [...new Set(
+                transaksiList.map(item => item.kode_transaksi).filter(Boolean)
+            )];
+
+            const mutasiByKode = new Map();
+            if (kodeList.length > 0) {
+                const { data: mutasiRows, error: mutasiError } = await supabase
+                    .from('mutasi_saldo')
+                    .select('kode_transaksi, saldo_sebelumnya, saldo_sesudahnya, nominal')
+                    .in('kode_transaksi', kodeList);
+
+                if (mutasiError) {
+                    console.error("Supabase Mutasi Error:", mutasiError.message);
+                } else {
+                    for (const m of (mutasiRows || [])) {
+                        mutasiByKode.set(m.kode_transaksi, m);
+                    }
+                }
+            }
+
+            const rows = transaksiList.map(row => {
+                const mutasi = mutasiByKode.get(row.kode_transaksi);
+                return {
+                    ...row,
+                    pesan_reseller: row.pesan_sukses_ke_reseller || row.pesan,
+                    saldo_sebelumnya: mutasi ? Number(mutasi.saldo_sebelumnya) : null,
+                    saldo_terbaru: mutasi ? Number(mutasi.saldo_sesudahnya) : null
+                };
+            });
+
             res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
             res.end(JSON.stringify({
                 status: true,
-                data: data || []
+                data: rows
             }));
             return;
+        }
+
+        // Halaman Admin dari folder public/admin.html
+        if (req.method === 'GET' && (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin.html')) {
+            const filePath = path.join(__dirname, 'public', 'admin-saldo.html');
+            fs.readFile(filePath, (err, content) => {
+                if (err) {
+                    res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                    res.end('Halaman admin tidak ditemukan.');
+                    return;
+                }
+                res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
+                res.end(content);
+            });
+            return;
+        }
+
+        // Login Admin
+        if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/login') {
+            const { username, password } = await bacaBodyJSON(req);
+            if (username === ADMIN_USER && password === ADMIN_PASS) {
+                const token = buatAdminToken(username);
+                return kirimJSON(res, 200, { status: true, token, username });
+            }
+            return kirimJSON(res, 401, { status: false, message: 'Username atau password admin salah.' });
+        }
+
+        // Semua route /api/admin/* selain login wajib token valid
+        if (parsedUrl.pathname.startsWith('/api/admin/')) {
+            const adminSession = verifikasiAdminToken(req);
+            if (!adminSession) {
+                return kirimJSON(res, 401, { status: false, message: 'Sesi admin tidak valid atau sudah kedaluwarsa.' });
+            }
+
+            if (!supabaseUrl || !supabaseKey) {
+                return kirimJSON(res, 500, { status: false, message: 'Konfigurasi Supabase belum lengkap.' });
+            }
+
+            // --- RESELLER (USERS) ---
+            if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/resellers') {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('id, nama, email, no_hp, saldo, status, created_at')
+                    .order('id', { ascending: false });
+                if (error) return kirimJSON(res, 500, { status: false, message: error.message });
+                return kirimJSON(res, 200, { status: true, data: data || [] });
+            }
+
+            if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/resellers') {
+                const { nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
+                if (!nama) return kirimJSON(res, 400, { status: false, message: 'Nama reseller wajib diisi.' });
+
+                const { data, error } = await supabase
+                    .from('users')
+                    .insert([{
+                        nama: String(nama).trim(),
+                        email: email ? String(email).trim() : null,
+                        no_hp: no_hp ? String(no_hp).trim() : null,
+                        saldo: Number(saldo || 0),
+                        status: status || 'aktif'
+                    }])
+                    .select()
+                    .single();
+
+                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
+                return kirimJSON(res, 201, { status: true, data });
+            }
+
+            if (req.method === 'PUT' && parsedUrl.pathname === '/api/admin/resellers') {
+                const { id, nama, email, no_hp, saldo, status } = await bacaBodyJSON(req);
+                if (!id) return kirimJSON(res, 400, { status: false, message: 'ID reseller wajib diisi.' });
+
+                const { data, error } = await supabase
+                    .from('users')
+                    .update({
+                        nama: String(nama).trim(),
+                        email: email ? String(email).trim() : null,
+                        no_hp: no_hp ? String(no_hp).trim() : null,
+                        saldo: Number(saldo ?? 0),
+                        status: status || 'aktif',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', id)
+                    .select()
+                    .single();
+
+                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
+                return kirimJSON(res, 200, { status: true, data });
+            }
+
+            if (req.method === 'DELETE' && parsedUrl.pathname === '/api/admin/resellers') {
+                const id = parsedUrl.searchParams.get('id');
+                if (!id) return kirimJSON(res, 400, { status: false, message: 'Parameter id wajib ada.' });
+
+                const { error } = await supabase.from('users').delete().eq('id', id);
+                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
+                return kirimJSON(res, 200, { status: true, message: 'Reseller dihapus.' });
+            }
+
+            // --- PRODUK PULSA ---
+            if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/produk') {
+                const { data, error } = await supabase
+                    .from('produk_pulsa')
+                    .select('*')
+                    .order('id', { ascending: false });
+                if (error) return kirimJSON(res, 500, { status: false, message: error.message });
+                return kirimJSON(res, 200, { status: true, data: data || [] });
+            }
+
+            if (req.method === 'POST' && parsedUrl.pathname === '/api/admin/produk') {
+                const bodyObj = await bacaBodyJSON(req);
+                if (!bodyObj.kode_produk || !bodyObj.nama_produk || !bodyObj.provider) {
+                    return kirimJSON(res, 400, { status: false, message: 'Kode produk, nama produk, dan provider wajib diisi.' });
+                }
+
+                const { data, error } = await supabase
+                    .from('produk_pulsa')
+                    .insert([{
+                        kode_produk: String(bodyObj.kode_produk).trim().toUpperCase(),
+                        nama_produk: String(bodyObj.nama_produk).trim(),
+                        kategori: bodyObj.kategori || 'Pulsa',
+                        provider: String(bodyObj.provider).trim(),
+                        nominal: Number(bodyObj.nominal || 0),
+                        harga_modal: Number(bodyObj.harga_modal || 0),
+                        harga_jual: Number(bodyObj.harga_jual || 0),
+                        is_aktif: Boolean(bodyObj.is_aktif ?? true),
+                        keterangan: bodyObj.keterangan || null
+                    }])
+                    .select()
+                    .single();
+
+                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
+                return kirimJSON(res, 201, { status: true, data });
+            }
+
+            if (req.method === 'PUT' && parsedUrl.pathname === '/api/admin/produk') {
+                const bodyObj = await bacaBodyJSON(req);
+                if (!bodyObj.id) return kirimJSON(res, 400, { status: false, message: 'ID produk wajib diisi.' });
+
+                const { data, error } = await supabase
+                    .from('produk_pulsa')
+                    .update({
+                        kode_produk: String(bodyObj.kode_produk).trim().toUpperCase(),
+                        nama_produk: String(bodyObj.nama_produk).trim(),
+                        kategori: bodyObj.kategori || 'Pulsa',
+                        provider: String(bodyObj.provider).trim(),
+                        nominal: Number(bodyObj.nominal || 0),
+                        harga_modal: Number(bodyObj.harga_modal || 0),
+                        harga_jual: Number(bodyObj.harga_jual || 0),
+                        is_aktif: Boolean(bodyObj.is_aktif),
+                        keterangan: bodyObj.keterangan || null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', bodyObj.id)
+                    .select()
+                    .single();
+
+                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
+                return kirimJSON(res, 200, { status: true, data });
+            }
+
+            if (req.method === 'DELETE' && parsedUrl.pathname === '/api/admin/produk') {
+                const id = parsedUrl.searchParams.get('id');
+                if (!id) return kirimJSON(res, 400, { status: false, message: 'Parameter id wajib ada.' });
+
+                const { error } = await supabase.from('produk_pulsa').delete().eq('id', id);
+                if (error) return kirimJSON(res, 400, { status: false, message: error.message });
+                return kirimJSON(res, 200, { status: true, message: 'Produk dihapus.' });
+            }
+
+            return kirimJSON(res, 404, { status: false, message: 'Endpoint admin tidak ditemukan.' });
         }
 
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
