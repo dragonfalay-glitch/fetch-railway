@@ -451,7 +451,9 @@
       if (tab === 'log') loadLogTransaksi(1);
     }
 
-    // --- RESELLER ---
+   // --- RESELLER ---
+    let editingResellerId = null;
+
     async function loadResellers() {
       const res = await adminFetch('/api/admin/resellers');
       if (!res.status) return;
@@ -460,8 +462,8 @@
       tbody.innerHTML = resellerCache.map(r => `
         <tr>
           <td>${r.id}</td>
+          <td><strong>${r.user_id ?? '-'}</strong></td>
           <td>${r.nama}</td>
-          <td><small style="color:var(--muted);">${r.auth_user_id || '-'}</small></td>
           <td>${r.no_hp || '-'}</td>
           <td><strong>${fmtRp(r.saldo)}</strong></td>
           <td><span class="${r.status === 'aktif' ? 'badge-ok' : 'badge-off'}">${r.status}</span></td>
@@ -476,10 +478,11 @@
     function editReseller(id) {
       const r = resellerCache.find(x => x.id === id);
       if (!r) return;
+      editingResellerId = r.id;
       document.getElementById('resellerFormTitle').textContent = 'Edit Reseller #' + r.id;
-      document.getElementById('resellerId').value = r.id;
+      document.getElementById('resellerId').value = r.id ?? '';
+      document.getElementById('resellerUserId').value = r.user_id ?? '';
       document.getElementById('resellerNama').value = r.nama || '';
-      document.getElementById('resellerAuthUserId').value = r.auth_user_id || '';
       document.getElementById('resellerHp').value = r.no_hp || '';
       document.getElementById('resellerEmail').value = r.email || '';
       document.getElementById('resellerSaldo').value = r.saldo ?? 0;
@@ -487,28 +490,33 @@
     }
 
     function resetResellerForm() {
+      editingResellerId = null;
       document.getElementById('resellerFormTitle').textContent = 'Tambah Reseller';
       document.getElementById('resellerForm').reset();
       document.getElementById('resellerId').value = '';
-      document.getElementById('resellerAuthUserId').value = '';
+      document.getElementById('resellerUserId').value = '';
       document.getElementById('resellerMsg').textContent = '';
     }
 
     document.getElementById('resellerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       document.getElementById('resellerMsg').textContent = '';
-      const id = document.getElementById('resellerId').value;
+      const inputIdVal = document.getElementById('resellerId').value.trim();
+      const userIdVal = document.getElementById('resellerUserId').value.trim();
+
+      const isEdit = editingResellerId !== null;
       const payload = {
-        ...(id ? { id: Number(id) } : {}),
+        ...(isEdit ? { id: editingResellerId } : (inputIdVal ? { id: Number(inputIdVal) } : {})),
+        user_id: userIdVal !== '' ? userIdVal : null,
         nama: document.getElementById('resellerNama').value,
-        auth_user_id: document.getElementById('resellerAuthUserId').value.trim() || null,
         no_hp: document.getElementById('resellerHp').value,
         email: document.getElementById('resellerEmail').value,
         saldo: Number(document.getElementById('resellerSaldo').value || 0),
         status: document.getElementById('resellerStatus').value
       };
+
       const res = await adminFetch('/api/admin/resellers', {
-        method: id ? 'PUT' : 'POST',
+        method: isEdit ? 'PUT' : 'POST',
         body: JSON.stringify(payload)
       });
       if (!res.status) {
