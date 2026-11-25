@@ -376,46 +376,53 @@ const server = http.createServer(async (req, res) => {
                 res.end(JSON.stringify({ status: false, message: 'Konfigurasi Supabase belum lengkap.' }));
                 return;
             }
-
+        
             const refID = parsedUrl.searchParams.get('refID') || '';
             const userID = parsedUrl.searchParams.get('userID') || '';
             const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '20', 10);
             const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 20;
-
+        
             let query = supabase
                 .from('inbox_direct_transaksi')
                 .select('id, kode_transaksi, tujuan, pesan, pesan_sukses_ke_reseller, tgl_entri, user_id')
                 .order('tgl_entri', { ascending: false })
                 .limit(limit);
-
+        
             if (refID) {
                 query = query.eq('kode_transaksi', refID);
             }
             if (userID) {
                 query = query.eq('user_id', userID);
             }
-
+        
             const { data, error } = await query;
-
+        
             if (error) {
                 console.error("Supabase Select Error:", error.message);
                 res.writeHead(500, { 'Content-Type': 'application/json; charset=UTF-8' });
                 res.end(JSON.stringify({ status: false, message: 'Gagal mengambil riwayat dari Supabase.' }));
                 return;
             }
-
+        
             const transaksiList = data || [];
             const kodeList = [...new Set(
                 transaksiList.map(item => item.kode_transaksi).filter(Boolean)
             )];
-
+        
             const mutasiByKode = new Map();
             if (kodeList.length > 0) {
-                const { data: mutasiRows, error: mutasiError } = await supabase
+                // Menggantikan query mutasi_saldo sebelumnya
+                let mutasiQuery = supabase
                     .from('mutasi_saldo')
-                    .select('kode_transaksi, saldo_sebelumnya, saldo_sesudahnya, nominal')
+                    .select('kode_transaksi, user_id, saldo_sebelumnya, saldo_sesudahnya, nominal')
                     .in('kode_transaksi', kodeList);
-
+        
+                if (userID) {
+                    mutasiQuery = mutasiQuery.eq('user_id', userID);
+                }
+        
+                const { data: mutasiRows, error: mutasiError } = await mutasiQuery;
+        
                 if (mutasiError) {
                     console.error("Supabase Mutasi Error:", mutasiError.message);
                 } else {
@@ -424,17 +431,19 @@ const server = http.createServer(async (req, res) => {
                     }
                 }
             }
-
+        
             const rows = transaksiList.map(row => {
                 const mutasi = mutasiByKode.get(row.kode_transaksi);
                 return {
                     ...row,
                     pesan_reseller: row.pesan_sukses_ke_reseller || row.pesan,
-                    saldo_sebelumnya: mutasi ? Number(mutasi.saldo_sebelumnya) : null,
-                    saldo_terbaru: mutasi ? Number(mutasi.saldo_sesudahnya) : null
+                    saldo_sebelumnya: mutasi?.saldo_sebelumnya != null ? Number(mutasi.saldo_sebelumnya) : null,
+                    saldo_terbaru: mutasi?.saldo_sesudahnya != null ? Number(mutasi.saldo_sesudahnya) : null,
+                    user_id: mutasi?.user_id ?? row.user_id,
+                    nominal: mutasi?.nominal != null ? Number(mutasi.nominal) : null
                 };
             });
-
+        
             res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
             res.end(JSON.stringify({
                 status: true,
@@ -442,6 +451,7 @@ const server = http.createServer(async (req, res) => {
             }));
             return;
         }
+        
 
         // Halaman Admin dari folder public/admin-saldo.html
         if (req.method === 'GET' && (parsedUrl.pathname === '/admin-saldo' || parsedUrl.pathname === '/admin-saldo.html')) {
