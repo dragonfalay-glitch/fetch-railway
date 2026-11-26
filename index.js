@@ -263,14 +263,7 @@ const server = http.createServer(async (req, res) => {
            
             const csrfToken = req.headers['x-csrf-token'] || data.csrfToken || '';
             const userID = data.userID ?? null;
-            const cekCsrf = verifikasiCsrfToken(csrfToken, userID);
-
-            if (!cekCsrf.valid) {
-                res.writeHead(403, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                res.end(`Gagal, ${cekCsrf.reason}`);
-                return;
-            }
-            
+           
             let body = '';
 
             req.on('data', chunk => {
@@ -278,9 +271,9 @@ const server = http.createServer(async (req, res) => {
             });
 
             req.on('end', async () => {
-                let data;
+                let data = {};
                 try {
-                    data = JSON.parse(body);
+                    data = JSON.parse(body || '{}');
                 } catch (parseErr) {
                     res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
                     res.end('Format JSON tidak valid.');
@@ -288,6 +281,7 @@ const server = http.createServer(async (req, res) => {
                 }
 
                 try {
+                    const csrfToken = req.headers['x-csrf-token'] || data.csrfToken || '';
                     const memberID = data.memberID || '';
                     const product = data.product || '';
                     const dest = data.dest ?? data.tujuan ?? '';
@@ -295,6 +289,14 @@ const server = http.createServer(async (req, res) => {
                     const sign = data.sign || '';
                     const token = data.token || '';
                     const userID = data.userID ?? null;
+
+                    // Validasi CSRF token sebelum memproses transaksi
+                    const cekCsrf = verifikasiCsrfToken(csrfToken, userID);
+                    if (!cekCsrf.valid) {
+                        res.writeHead(403, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end(`Gagal, ${cekCsrf.reason}`);
+                        return;
+                    }
 
                     // Cek apakah userID dari frontend terdaftar di kolom user_id pada tabel users
                     if (!userID || String(userID).trim() === '') {
