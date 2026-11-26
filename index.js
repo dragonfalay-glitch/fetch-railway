@@ -255,10 +255,21 @@ const server = http.createServer(async (req, res) => {
                     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
                     let responseText = "";
+                    //sumulasi respon
+                    // Contoh simulasi responseText sukses dari endpoint /transaksi
+                    const simulatedSuccessResponse = [
+                        `T#78074761 R# ${refID || "PLN20.14328128393"}`,
+                        `SUKSES. SN/Ref:5745-1752-1091-8984-`,
+                        ``,
+                        `6308/SARIYANI/R1/450VA/46,4 . Stok Terpotong 19.875 .Stok 1.685.843`,
+                        `@29/11 10:49:07 /Trx=271.`
+                    ].join("\n");
+                    
                     try {
                         const response = await fetch(targetUrl, { signal: controller.signal });
                         clearTimeout(timeoutId);
-                        responseText = await response.text();
+                       // responseText = await response.text();
+                         responseText = simulatedSuccessResponse;
                     } catch (fetchErr) {
                         clearTimeout(timeoutId);
                         console.error("Gagal fetch ke OtoMax:", fetchErr.message);
