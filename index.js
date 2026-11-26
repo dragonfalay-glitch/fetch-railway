@@ -13,6 +13,59 @@ const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASS = process.env.ADMIN_PASS || '';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+const CSRF_SECRET = process.env.CSRF_SECRET || process.env.ADMIN_SECRET || '';
+
+function buatCsrfToken(userID = '') {
+    if (!CSRF_SECRET) return '';
+    const payload = Buffer.from(JSON.stringify({
+        uid: String(userID || '').trim(),
+        nonce: crypto.randomBytes(12).toString('hex'),
+        exp: Date.now() + 15 * 60 * 1000 // berlaku 15 menit
+    })).toString('base64url');
+
+    const sig = crypto
+        .createHmac('sha256', CSRF_SECRET)
+        .update(payload)
+        .digest('base64url');
+
+    return `${payload}.${sig}`;
+}
+
+function verifikasiCsrfToken(token = '', userID = '') {
+    if (!CSRF_SECRET || !token || typeof token !== 'string' || !token.includes('.')) {
+        return { valid: false, reason: 'CSRF token tidak ditemukan atau tidak valid.' };
+    }
+
+    const parts = token.split('.');
+    if (parts.length !== 2) {
+        return { valid: false, reason: 'Format CSRF token tidak valid.' };
+    }
+
+    const [payload, sig] = parts;
+    const expectedSig = crypto
+        .createHmac('sha256', CSRF_SECRET)
+        .update(payload)
+        .digest('base64url');
+
+    const sigBuf = Buffer.from(sig);
+    const expectedBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+        return { valid: false, reason: 'Tanda tangan CSRF token tidak sah.' };
+    }
+
+    try {
+        const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+        if (!parsed.exp || Date.now() > Number(parsed.exp)) {
+            return { valid: false, reason: 'CSRF token sudah kedaluwarsa.' };
+        }
+        if (parsed.uid && userID && String(parsed.uid) !== String(userID).trim()) {
+            return { valid: false, reason: 'CSRF token tidak cocok dengan userID.' };
+        }
+        return { valid: true, payload: parsed };
+    } catch {
+        return { valid: false, reason: 'Payload CSRF token rusak.' };
+    }
+}
 
 function buatAdminToken(username) {
     const payload = Buffer.from(JSON.stringify({
@@ -174,7 +227,7 @@ const server = http.createServer(async (req, res) => {
     // 1. Header CORS diperbarui mendukung GET, POST, PUT, DELETE, OPTIONS, dan Authorization
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
 
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
@@ -191,8 +244,33 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
+        // Endpoint ambil CSRF token sebelum/saat membuka form transaksi
+            if (req.method === 'GET' && parsedUrl.pathname === '/csrf-token') {
+                const userID = (parsedUrl.searchParams.get('userID') || '').trim();
+                if (!CSRF_SECRET) {
+                    return kirimJSON(res, 500, { status: false, message: 'CSRF_SECRET belum dikonfigurasi di server.' });
+                }
+                const csrfToken = buatCsrfToken(userID);
+                return kirimJSON(res, 200, {
+                    status: true,
+                    csrfToken,
+                    expiresInSec: 900
+                });
+            }
+
         // 2. Tangani Request POST dari Frontend
         if (req.method === 'POST' && (parsedUrl.pathname === '/transaksi' || parsedUrl.pathname === '/run')) {
+           
+            const csrfToken = req.headers['x-csrf-token'] || data.csrfToken || '';
+            const userID = data.userID ?? null;
+            const cekCsrf = verifikasiCsrfToken(csrfToken, userID);
+
+            if (!cekCsrf.valid) {
+                res.writeHead(403, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                res.end(`Gagal, ${cekCsrf.reason}`);
+                return;
+            }
+            
             let body = '';
 
             req.on('data', chunk => {
