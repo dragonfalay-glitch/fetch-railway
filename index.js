@@ -111,6 +111,23 @@ function ekstrakSN(pesan = '') {
     return matchSN ? matchSN[1].trim() : null;
 }
 
+// Ekstrak nama pelanggan dari format SN/detail PLN OtoMax (misal: 6308/SARIYANI/R1/450VA/46,4)
+function ekstrakNamaSN(pesan = '') {
+    const teks = String(pesan);
+
+    const matchSlash = teks.match(/\b\d+\s*\/\s*([A-Z0-9 .'-]{2,60}?)\s*\/\s*[A-Z0-9]+\s*\/\s*\d+\s*VA/i);
+    if (matchSlash && matchSlash[1]) {
+        return matchSlash[1].replace(/\s+/g, ' ').trim();
+    }
+
+    const matchAlternatif = teks.match(/\b\d+\s*\/\s*([A-Za-z][A-Za-z0-9 .'-]{1,50}?)\s*(?:\/|\s*\.\s*Stok)/i);
+    if (matchAlternatif && matchAlternatif[1]) {
+        return matchAlternatif[1].replace(/\s+/g, ' ').trim();
+    }
+
+    return null;
+}
+
 // Ekstrak info tambahan PLN jika tersedia di respon OtoMax
 function ekstrakInfoPLN(pesan = '') {
     const teks = String(pesan);
@@ -129,9 +146,11 @@ function formatRupiah(angka) {
 // Susun pesan khusus untuk reseller saat transaksi sukses & saldo terpotong
 function buatPesanSuksesReseller({ kodeTransaksi, produk, tujuan, pesanOtoMax, nominalPotong, saldoTerbaru }) {
     const sn = ekstrakSN(pesanOtoMax);
+    const namaSN = ekstrakNamaSN(pesanOtoMax);
     const pln = ekstrakInfoPLN(pesanOtoMax);
 
     const barisSN = sn ? `\nSN/Ref: ${sn}` : '';
+    const barisNama = namaSN ? `\nNama: ${namaSN}` : '';
     const barisPln = [
         pln.idPel ? `IDPel: ${pln.idPel}` : null,
         pln.idMeter ? `IDMeter: ${pln.idMeter}` : null,
@@ -146,10 +165,11 @@ function buatPesanSuksesReseller({ kodeTransaksi, produk, tujuan, pesanOtoMax, n
     return [
         `Transaksi SUKSES (${kodeTransaksi})`,
         `Produk: ${produk}`,
-        `Tujuan: ${tujuan}${barisSN}${barisDetailPln}`,
+        `Tujuan: ${tujuan}${barisSN}${barisNama}${barisDetailPln}`,
         `Potongan Saldo: ${formatRupiah(nominalPotong)}${barisSaldo}`
     ].join('\n');
 }
+
 
 const server = http.createServer(async (req, res) => {
     // 1. Header CORS diperbarui mendukung GET, POST, PUT, DELETE, OPTIONS, dan Authorization
