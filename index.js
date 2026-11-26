@@ -207,9 +207,18 @@ const server = http.createServer(async (req, res) => {
                     const userIdClean = String(userID).trim();
                     const { data: resellerRow, error: resellerError } = await supabase
                         .from('users')
-                        .select('id, user_id, status')
+                        .select('id, user_id, status, saldo')
                         .eq('user_id', userIdClean)
                         .maybeSingle();
+
+                    const hargaProduk = Number(produkValid.harga_jual) || 0;
+                    const saldoReseller = Number(resellerRow.saldo ?? 0);
+                    
+                    if (hargaProduk > 0 && saldoReseller < hargaProduk) {
+                        res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end(`Gagal, Saldo tidak cukup (Saldo: Rp${saldoReseller.toLocaleString('id-ID')}, Harga: Rp${hargaProduk.toLocaleString('id-ID')}).`);
+                        return;
+                    }
 
                     if (resellerError) {
                         console.error("Supabase Cek Reseller Error:", resellerError.message);
