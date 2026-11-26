@@ -392,8 +392,8 @@ const server = http.createServer(async (req, res) => {
                     try {
                         const response = await fetch(targetUrl, { signal: controller.signal });
                         clearTimeout(timeoutId);
-                        // responseText = await response.text();
-                        responseText = simulatedSuccessResponse;
+                         responseText = await response.text();
+                       // responseText = simulatedSuccessResponse;
                     } catch (fetchErr) {
                         clearTimeout(timeoutId);
                         console.error("Gagal fetch ke OtoMax:", fetchErr.message);
