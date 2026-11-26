@@ -260,10 +260,6 @@ const server = http.createServer(async (req, res) => {
 
         // 2. Tangani Request POST dari Frontend
         if (req.method === 'POST' && (parsedUrl.pathname === '/transaksi' || parsedUrl.pathname === '/run')) {
-           
-            const csrfToken = req.headers['x-csrf-token'] || data.csrfToken || '';
-            const userID = data.userID ?? null;
-           
             let body = '';
 
             req.on('data', chunk => {
