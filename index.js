@@ -170,7 +170,6 @@ function buatPesanSuksesReseller({ kodeTransaksi, produk, tujuan, pesanOtoMax, n
     ].join('\n');
 }
 
-
 const server = http.createServer(async (req, res) => {
     // 1. Header CORS diperbarui mendukung GET, POST, PUT, DELETE, OPTIONS, dan Authorization
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -201,11 +200,19 @@ const server = http.createServer(async (req, res) => {
             });
 
             req.on('end', async () => {
+                let data;
                 try {
-                    const data = JSON.parse(body);
+                    data = JSON.parse(body);
+                } catch (parseErr) {
+                    res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                    res.end('Format JSON tidak valid.');
+                    return;
+                }
+
+                try {
                     const memberID = data.memberID || '';
                     const product = data.product || '';
-                    const dest = data.dest || '';
+                    const dest = data.dest ?? data.tujuan ?? '';
                     const refID = data.refID || '';
                     const sign = data.sign || '';
                     const token = data.token || '';
@@ -230,15 +237,6 @@ const server = http.createServer(async (req, res) => {
                         .select('id, user_id, status, saldo')
                         .eq('user_id', userIdClean)
                         .maybeSingle();
-
-                    const hargaProduk = Number(produkValid.harga_jual) || 0;
-                    const saldoReseller = Number(resellerRow.saldo ?? 0);
-                    
-                    if (hargaProduk > 0 && saldoReseller < hargaProduk) {
-                        res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                        res.end(`Gagal, Saldo tidak cukup (Saldo: Rp${saldoReseller.toLocaleString('id-ID')}, Harga: Rp${hargaProduk.toLocaleString('id-ID')}).`);
-                        return;
-                    }
 
                     if (resellerError) {
                         console.error("Supabase Cek Reseller Error:", resellerError.message);
@@ -280,6 +278,16 @@ const server = http.createServer(async (req, res) => {
                     if (!produkValid || kodeDbUpper !== kodeProdukClean || produkValid.is_aktif !== true) {
                         res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
                         res.end(`Gagal, Kode produk ${kodeProdukClean} tidak valid atau tidak aktif.`);
+                        return;
+                    }
+
+                    // Cek saldo reseller sebelum hit ke OtoMax
+                    const hargaProduk = Number(produkValid.harga_jual) || 0;
+                    const saldoReseller = Number(resellerRow.saldo ?? 0);
+
+                    if (hargaProduk > 0 && saldoReseller < hargaProduk) {
+                        res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                        res.end(`Gagal, Saldo tidak cukup (Saldo: ${formatRupiah(saldoReseller)}, Harga: ${formatRupiah(hargaProduk)}).`);
                         return;
                     }
 
@@ -334,26 +342,11 @@ const server = http.createServer(async (req, res) => {
                         if (insertError) {
                             console.error("Supabase Insert Error:", insertError.message);
                         } else if (isTransaksiSukses(responseText)) {
-                            // 1. Cari harga jual dari tabel produk_pulsa jika ada
                             let nominalPotong = Number(produkValid?.harga_jual) || 0;
-                            if (product) {
-                                const { data: produkRow, error: produkError } = await supabase
-                                    .from('produk_pulsa')
-                                    .select('harga_jual, is_aktif')
-                                    .eq('kode_produk', String(product).trim().toUpperCase())
-                                    .single();
-
-                                if (!produkError && produkRow && produkRow.is_aktif) {
-                                    nominalPotong = Number(produkRow.harga_jual) || 0;
-                                }
-                            }
-
-                            // 2. Fallback nominal jika tidak ada di produk_pulsa
                             if (nominalPotong <= 0) {
                                 nominalPotong = ambilNominalPotong(data, responseText);
                             }
 
-                            // 3. Potong saldo user secara atomik via RPC
                             if (userID && nominalPotong > 0) {
                                 const { data: rpcResult, error: rpcError } = await supabase.rpc(
                                     'potong_saldo_transaksi',
@@ -393,7 +386,6 @@ const server = http.createServer(async (req, res) => {
                                         }
                                     }
                                 } else {
-                                    //console.warn("Potong saldo tidak dieksekusi:", rpcResult);
                                     console.warn("Potong saldo tidak dieksekusi:", JSON.stringify(rpcResult));
                                 }
                             } else {
@@ -409,9 +401,10 @@ const server = http.createServer(async (req, res) => {
                     res.writeHead(200, { 'Content-Type': 'text/plain; charset=UTF-8' });
                     res.end(pesanSuksesReseller || responseText);
 
-                } catch (parseErr) {
-                    res.writeHead(400, { 'Content-Type': 'text/plain; charset=UTF-8' });
-                    res.end('Format JSON tidak valid.');
+                } catch (handlerErr) {
+                    console.error("Error saat memproses /transaksi:", handlerErr);
+                    res.writeHead(500, { 'Content-Type': 'text/plain; charset=UTF-8' });
+                    res.end(`Gagal memproses transaksi: ${handlerErr.message}`);
                 }
             });
             return;
@@ -760,15 +753,6 @@ const server = http.createServer(async (req, res) => {
                         saldo_terbaru: mutasi ? Number(mutasi.saldo_sesudahnya) : null
                     };
                 });
-
-                console.log('Data rows /api/admin/transaksi:', JSON.stringify(rows, null, 2));
-                console.log('Ringkasan tujuan per row:', rows.map(r => ({
-                    id: r.id,
-                    kode_transaksi: r.kode_transaksi,
-                    tujuan: r.tujuan,
-                    user_id: r.user_id,
-                    nama_reseller: r.nama_reseller
-                })));
 
                 const total = count ?? rows.length;
                 const totalPages = Math.max(1, Math.ceil(total / limit));
