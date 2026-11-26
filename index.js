@@ -364,7 +364,8 @@ const server = http.createServer(async (req, res) => {
                                         }
                                     }
                                 } else {
-                                    console.warn("Potong saldo tidak dieksekusi:", rpcResult);
+                                    //console.warn("Potong saldo tidak dieksekusi:", rpcResult);
+                                    console.warn("Potong saldo tidak dieksekusi:", JSON.stringify(rpcResult));
                                 }
                             } else {
                                 console.warn("Transaksi sukses, tetapi userID atau nominal potong saldo tidak valid:", {
