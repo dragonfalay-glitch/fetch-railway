@@ -60,7 +60,6 @@ function bacaBodyJSON(req) {
     });
 }
 
-// Cek apakah isi kolom `pesan` menandakan transaksi sukses
 // Cek apakah respon OtoMax benar-benar menandakan transaksi sukses (bukan gagal/pending/timeout)
 function isTransaksiSukses(pesan = '') {
     const teks = String(pesan).toUpperCase();
@@ -100,9 +99,9 @@ function ambilNominalPotong(data, pesan = '') {
     return 0;
 }
 
-// Ekstrak SN umum dari respon OtoMax jika tersedia
+// Ekstrak SN/Ref dari respon OtoMax jika tersedia
 function ekstrakSN(pesan = '') {
-   const teks = String(pesan);
+    const teks = String(pesan);
     const matchRef = teks.match(/SN\/Ref\s*:?\s*([0-9-]+(?:\s*\/\s*[^\r\n.]+)?)/i);
     if (matchRef && matchRef[1]) {
         return matchRef[1].replace(/\s+/g, ' ').trim();
@@ -110,6 +109,15 @@ function ekstrakSN(pesan = '') {
 
     const matchSN = teks.match(/\bSN\s*[:=/#-]?\s*([A-Za-z0-9-]{6,})/i);
     return matchSN ? matchSN[1].trim() : null;
+}
+
+// Ekstrak info tambahan PLN jika tersedia di respon OtoMax
+function ekstrakInfoPLN(pesan = '') {
+    const teks = String(pesan);
+    const idPel = teks.match(/IDPel\s*:\s*([0-9]+)/i)?.[1] || null;
+    const idMeter = teks.match(/IDMeter\s*:\s*([0-9]+)/i)?.[1] || null;
+    const rpToken = teks.match(/RPTOKEN\s*:\s*([0-9.,]+)/i)?.[1] || null;
+    return { idPel, idMeter, rpToken };
 }
 
 // Format rupiah sederhana
@@ -247,7 +255,7 @@ const server = http.createServer(async (req, res) => {
                     }
 
                     // Target URL ke OtoMax
-                    const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}`;
+                    const targetUrl = `http://49.128.180.101:18000/transaksi?memberID=${encodeURIComponent(memberID)}&product=${encodeURIComponent(product)}&dest=${encodeURIComponent(dest)}&refID=${encodeURIComponent(refID)}&sign=${encodeURIComponent(sign)}&token=${encodeURIComponent(token)}`;
 
                     console.log(`Memproses....`);
 
@@ -255,8 +263,7 @@ const server = http.createServer(async (req, res) => {
                     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
                     let responseText = "";
-                    //sumulasi respon
-                    // Contoh simulasi responseText sukses dari endpoint /transaksi
+                    // Simulasi respon (biarkan aktif selama pengujian)
                     const simulatedSuccessResponse = [
                         `T#78074761 R# ${refID || "PLN20.14328128393"}`,
                         `SUKSES. SN/Ref:5745-1752-1091-8984-`,
@@ -264,12 +271,12 @@ const server = http.createServer(async (req, res) => {
                         `6308/SARIYANI/R1/450VA/46,4 . Stok Terpotong 19.875 .Stok 1.685.843`,
                         `@29/11 10:49:07 /Trx=271.`
                     ].join("\n");
-                    
+
                     try {
                         const response = await fetch(targetUrl, { signal: controller.signal });
                         clearTimeout(timeoutId);
-                       // responseText = await response.text();
-                         responseText = simulatedSuccessResponse;
+                        // responseText = await response.text();
+                        responseText = simulatedSuccessResponse;
                     } catch (fetchErr) {
                         clearTimeout(timeoutId);
                         console.error("Gagal fetch ke OtoMax:", fetchErr.message);
@@ -387,53 +394,52 @@ const server = http.createServer(async (req, res) => {
                 res.end(JSON.stringify({ status: false, message: 'Konfigurasi Supabase belum lengkap.' }));
                 return;
             }
-        
+
             const refID = parsedUrl.searchParams.get('refID') || '';
             const userID = parsedUrl.searchParams.get('userID') || '';
             const limitParam = parseInt(parsedUrl.searchParams.get('limit') || '20', 10);
             const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 20;
-        
+
             let query = supabase
                 .from('inbox_direct_transaksi')
                 .select('id, kode_transaksi, tujuan, pesan, pesan_sukses_ke_reseller, tgl_entri, user_id')
                 .order('tgl_entri', { ascending: false })
                 .limit(limit);
-        
-           if (refID) {
-           query = query.eq('kode_transaksi', refID);
-           }
+
+            if (refID) {
+                query = query.eq('kode_transaksi', refID);
+            }
             if (userID) {
                 query = query.eq('user_id', userID);
             }
-        
+
             const { data, error } = await query;
-        
+
             if (error) {
                 console.error("Supabase Select Error:", error.message);
                 res.writeHead(500, { 'Content-Type': 'application/json; charset=UTF-8' });
                 res.end(JSON.stringify({ status: false, message: 'Gagal mengambil riwayat dari Supabase.' }));
                 return;
             }
-        
+
             const transaksiList = data || [];
             const kodeList = [...new Set(
                 transaksiList.map(item => item.kode_transaksi).filter(Boolean)
             )];
-        
+
             const mutasiByKode = new Map();
             if (kodeList.length > 0) {
-                // Menggantikan query mutasi_saldo sebelumnya
                 let mutasiQuery = supabase
                     .from('mutasi_saldo')
                     .select('kode_transaksi, user_id, saldo_sebelumnya, saldo_sesudahnya, nominal')
                     .in('kode_transaksi', kodeList);
-        
+
                 if (userID) {
                     mutasiQuery = mutasiQuery.eq('user_id', userID);
                 }
-        
+
                 const { data: mutasiRows, error: mutasiError } = await mutasiQuery;
-        
+
                 if (mutasiError) {
                     console.error("Supabase Mutasi Error:", mutasiError.message);
                 } else {
@@ -442,7 +448,7 @@ const server = http.createServer(async (req, res) => {
                     }
                 }
             }
-        
+
             const rows = transaksiList.map(row => {
                 const mutasi = mutasiByKode.get(row.kode_transaksi);
                 return {
@@ -454,7 +460,7 @@ const server = http.createServer(async (req, res) => {
                     nominal: mutasi?.nominal != null ? Number(mutasi.nominal) : null
                 };
             });
-        
+
             res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
             res.end(JSON.stringify({
                 status: true,
@@ -462,7 +468,6 @@ const server = http.createServer(async (req, res) => {
             }));
             return;
         }
-        
 
         // Halaman Admin dari folder public/admin-saldo.html
         if (req.method === 'GET' && (parsedUrl.pathname === '/admin-saldo' || parsedUrl.pathname === '/admin-saldo.html')) {
@@ -500,7 +505,7 @@ const server = http.createServer(async (req, res) => {
                 return kirimJSON(res, 500, { status: false, message: 'Konfigurasi Supabase belum lengkap.' });
             }
 
-           // --- RESELLER (USERS) ---
+            // --- RESELLER (USERS) ---
             if (req.method === 'GET' && parsedUrl.pathname === '/api/admin/resellers') {
                 const { data, error } = await supabase
                     .from('users')
