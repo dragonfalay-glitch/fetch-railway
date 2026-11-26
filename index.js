@@ -50,20 +50,24 @@ function verifikasiCsrfToken(token = '', userID = '') {
     const sigBuf = Buffer.from(sig);
     const expectedBuf = Buffer.from(expectedSig);
     if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
-        return { valid: false, reason: 'Tanda tangan CSRF token tidak sah.' };
+      //  return { valid: false, reason: 'Tanda tangan CSRF token tidak sah.' };
+         return { valid: false, reason: 'CSRF GAGAL.' };
     }
 
     try {
         const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
         if (!parsed.exp || Date.now() > Number(parsed.exp)) {
-            return { valid: false, reason: 'CSRF token sudah kedaluwarsa.' };
+           // return { valid: false, reason: 'CSRF token sudah kedaluwarsa.' };
+             return { valid: false, reason: 'CSRF GAGAL.' };
         }
         if (parsed.uid && userID && String(parsed.uid) !== String(userID).trim()) {
-            return { valid: false, reason: 'CSRF token tidak cocok dengan userID.' };
+           // return { valid: false, reason: 'CSRF token tidak cocok dengan userID.' };
+            return { valid: false, reason: 'CSRF GAGAL.' };
         }
         return { valid: true, payload: parsed };
     } catch {
-        return { valid: false, reason: 'Payload CSRF token rusak.' };
+      //  return { valid: false, reason: 'Payload CSRF token rusak.' };
+         return { valid: false, reason: 'CSRF GAGAL.' };
     }
 }
 
