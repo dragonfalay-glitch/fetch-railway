@@ -399,9 +399,9 @@ const server = http.createServer(async (req, res) => {
                 .order('tgl_entri', { ascending: false })
                 .limit(limit);
         
-          //  if (refID) {
-            //    query = query.eq('kode_transaksi', refID);
-          //  }
+           if (refID) {
+           query = query.eq('kode_transaksi', refID);
+           }
             if (userID) {
                 query = query.eq('user_id', userID);
             }
