@@ -720,8 +720,10 @@ const server = http.createServer(async (req, res) => {
 
                 const rows = list.map(item => {
                     const mutasi = mutasiMap.get(item.kode_transaksi);
+                    const tujuan = item.tujuan ? String(item.tujuan).trim() : '-';
                     return {
                         ...item,
+                        tujuan,
                         nama_reseller: item.user_id ? (userMap.get(String(item.user_id)) || '-') : '-',
                         pesan_reseller: item.pesan_sukses_ke_reseller || item.pesan,
                         nominal_potong: mutasi ? Number(mutasi.nominal) : null,
@@ -729,6 +731,15 @@ const server = http.createServer(async (req, res) => {
                         saldo_terbaru: mutasi ? Number(mutasi.saldo_sesudahnya) : null
                     };
                 });
+
+                console.log('Data rows /api/admin/transaksi:', JSON.stringify(rows, null, 2));
+                console.log('Ringkasan tujuan per row:', rows.map(r => ({
+                    id: r.id,
+                    kode_transaksi: r.kode_transaksi,
+                    tujuan: r.tujuan,
+                    user_id: r.user_id,
+                    nama_reseller: r.nama_reseller
+                })));
 
                 const total = count ?? rows.length;
                 const totalPages = Math.max(1, Math.ceil(total / limit));
